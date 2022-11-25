@@ -1,0 +1,139 @@
+---
+title: "Oblivious data for fairness with kernels"
+author: "Arthur Katossky & Léo Houairi"
+format: html
+# reference-location: margin
+# citation-location: margin
+---
+
+In "Oblivious data for fairness with kernels", Steffen Grünewälder and Azadeh Khaleghi offer a very detailed motivation and explanation of the construction of "oblivious" features namely, in the prediction of $y$ from unsensitive information $x$ and sensitive information $s$, features $z=\phi(x)$ that realise some sort of independence from $s$. Such features may be released and used for prediction, without sharing any confidential data.
+
+The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article.
+
+## Background
+
+## Application
+
+The application uses synthetic data representing the grades of students discriminated according to some sensitive feature. $\tilde s\sim B(0.5)$ is the (binary) sensitive feature[^1]. The grades are biased towards the high-prestige status associated with $\tilde s=1$, which the authors model as: $$\tilde x\overset{def}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$ ... where $\tilde x_0\sim\mathcal{N}_{[1,4]}(2.5,0.5)$ is the baseline grade and $\tilde b\sim B(0.9)$ is the 1-unit bias for group $s=1$ or against group $s=0$ [^2].
+
+[^1]: In the code, half of the synthetic data has $s=1$ the other half $s=0$, deterministically:
+    ```python
+    unique_sensitive_feature_values=[0,1]
+    sensitive_features =
+      [unique_sensitive_feature_values[0]] * n_samples +
+      [unique_sensitive_feature_values[1]] * n_samples
+    ```
+    
+[^2]: In the code:
+    ```python
+    max_non_sensitive_feature_value = 4.0
+    min_non_sensitive_feature_value = 1.0
+    mu = 0.5 * (max_non_sensitive_feature_value+min_non_sensitive_feature_value)
+    Lower = generate_truncnorm_samples(
+      n_samples, min_non_sensitive_feature_value,
+      max_non_sensitive_feature_value, mu, sigma
+    )
+    Upper = generate_truncnorm_samples(
+      n_samples, min_non_sensitive_feature_value,
+      max_non_sensitive_feature_value, mu, sigma
+    )
+    non_sensitive_features = 
+      [Lower-stats.bernoulli(0.9).rvs(n_samples)*1]+
+      [Upper+stats.bernoulli(0.9).rvs(n_samples)*1]
+    ```
+
+Eventually, the authors construct a decision mimicking some decision made based on the students' official results. This decision is based on a mix of the true student abilities (as given by $x_0$) and the biased ones (as given by $x$). Namely, they set : $$\tilde y = \mathbb{1}(\tilde u\geqslant \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$$ ... with $\tilde u\sim\mathcal{U}[0,4]$ and $\theta$ a real parameter, arbitrarily set by the authors to be $\theta=\mathbb{E}\tilde x_0=2.5$ [^4].
+
+[^4]: The paper states that $\tilde u\sim\mathcal{U}[0,1]$ but this contradicts the earlier statement that $\tilde x_0$ be truncated on $[1,4]$. In the code, we see that $\mathbb{1}(\tilde u\geqslant x_0)\sim \mathcal{B}(x_0/4)$, which means that in reality $\tilde u\sim\mathcal{U}[0,4]$. Again, this ignores the fact that $\tilde x_0\overset{a.s.}>1$.
+    
+    ```python
+    threshold = mu # mu is the mean of the truncated normal distribution from above
+    Y_Bernoulli_params = non_sensitive_features0 / max_non_sensitive_feature_value
+    Y = [stats.bernoulli(Y_Bernoulli_params[i]).rvs(1) for i in range(len(Y_Bernoulli_params))]
+    Y = Y * ((non_sensitive_features + sensitive_features >= threshold)*1)
+    ```
+
+Contrary to the mathematical background, the implementation is not detailed in the paper, so we reconstruct it from the code. In [the SVM example]( https://github.com/azalk/Oblivious/blob/main/SVM_Example.py ), the substantial part is:
+
+```python
+# X is training data (including sensitive data) of length 2n = 2×500 
+# S is X reduced to the sensitive data
+# y_train is training predictions of length n
+K = obl.build_K_lin(X,X)      # K has size 2n × 2n
+O = obl.build_O_discrete(K,S) # O has size  n ×  n
+clf = svm.SVC(kernel='precomputed')
+clf.fit(O, y_train)
+```
+
+The `K = obl.build_K_lin(X,X)` line is straightforward, as it just builds the kernel matrix consisting in all dot products between line $i$ and column $j$ of `X`. On the other hand, the essence of the oblivious method proposed by the authors lay hidden behind the `O = obl.build_O_discrete(K,S)` line. It boils down to the following loop over the first $n=500$ observations, where all the averages `mean_iI`, `mean_IJ`, `mean_I`, `mean_i` and `Ephi` are computed on the second (independent) half. (This explains why `K` has size $2n$ × $2n$ whereas `O` has size $n\times n$.)
+
+```python
+for i in range(n): # n=500 (half the dataset length)
+  for j in range(i,n):
+    
+    u = int(self.S_train[i]) # value of s for observation i
+    v = int(self.S_train[j]) # value of s for observation j
+    
+    O[i,j] = K[i,j] # kernel value
+      # 1. subtract individual-category average K[i, S=s]
+      #    for s matching observed values
+      - mean_iI[i,v] - mean_iI[j,u] 
+      # 2. add category-category average K[S=s1,S=s2]
+      #    for s1, s2 matching observed values
+      + mean_IJ[u,v]
+      # 3. add individual average K[i,.]
+      + mean_i[j] + mean_i[i]
+      # 4. subtract category average K[S=s,.]
+      #    with s matching observed values
+      - mean_I[u] - mean_I[v]
+      # 5. add general average K[.,.]
+      + Ephi
+    
+    # save computation with symmetry
+    O[j,i] = O[i,j]
+```
+
+## Conclusions
+
+> \[in our experiment\], we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
+
+
+## Source
+
+### Generating an oblivious random variable
+
+> Given a data-point $(X, S)$ composed of non-sensitive and sensitive features $X$ and $S$ respectively, we can generate an oblivious random variable $Z$ as
+$$
+\boldsymbol{Z}:=\phi(X)-E_n^S \phi(X)+E_n(\phi(X)) .
+$$
+> Most kernel methods work with the kernel matrix and do not need access to the features themselves. The same holds in our setting. More specifically, we never need to represent $Z$ explicitly in the Hilbert space but only require inner-product calculations. In order to calculate the empirical estimates of the conditional expectation $E_n^S \phi(X)$ and of $E_n(\phi(X))$ in (9) we consider a simple approach whereby we split the training set into two subsets of size $n$, and use half the observations to obtain the empirical estimates of the expectations. The remaining $n$ observations are used to obtain an oblivious predictor; we have two cases as follows.
+
+> Case 1 (M-Oblivious). The standard kernel matrix $K$ is calculated with the remaining $n$ observations and a kernel-method is applied to $K$ to obtain a predictor $g$. When applying the predictor to a new unseen data-point $(X, S)$ we first transform $X$ into $Z$ via (9) and calculate the prediction as $\langle g, \boldsymbol{Z}\rangle$. As discussed in the Introduction, we conjecture that this approach is suitable in the case where the labels $Y$ are conditionally independent of the sensitive features $S$ given the non-sensitive features $X$, i.e. when $S, X, Y$ form a Markov chain $S \rightarrow X \rightarrow Y$. As such we call this approach $M$-Oblivious.
+
+> Case 2 (Oblivious). Instead of calculating the kernel matrix $K$ an oblivious kernel matrix, i.e.
+$$
+\mathcal{O}=\left(\begin{array}{ccc}
+\left\|\boldsymbol{Z}_1\right\|^2 & \cdots & \left\langle\boldsymbol{Z}_1, \boldsymbol{Z}_n\right\rangle \\
+\vdots & \ddots & \vdots \\
+\left\langle\boldsymbol{Z}_n, \boldsymbol{Z}_1\right\rangle & \cdots & \left\|\boldsymbol{Z}_n\right\|^2
+\end{array}\right)
+$$
+> is calculated by applying Equation (9) to the remaining training samples $\left(X_i, S_i\right)$ before taking inner products. The oblivious matrix is then passed to the kernel-method to gain a predictor $g$. The matrix is positive semi-definite since $\mathbf{a}^{\top} \mathcal{O} \mathbf{a}=\left\|\sum_{i=1}^n a_i \boldsymbol{Z}_i\right\|^2 \geq 0$, for any $\mathbf{a} \in \mathbb{R}^n$. The complexity to compute the matrix is $O\left(n^2\right)$ (see Appendix E for details on the algorithm). Prediction for a new unseen data-point $(X, S)$ is now done in the same way as in Case 1 .
+
+### Application
+
+> We carried out an experiment to mimic a scenario where a class of students should normally receive grades between 0 and 5 , and anyone with a grade above a fixed threshold $\theta=2$ should pass. Half of the class, representing a "minority group", are disadvantaged in that their grades are almost systematically reduced, while the other half receive a boost on average. More specifically, let the sensitive feature $S$ be a $\{0,1\}$-valued Bernoulli random variable with parameter $0.5$, and let $X_0$ be distributed according to a truncated normal distribution with support \[1,4\]. Let the non-sensitive feature $X$, representing a student's grade, be given by $$
+> X:=\left(X_0-B\right) \chi\{S=0\}+\left(X_0+B\right) \chi\{S=1\}
+> $$
+
+> where $B$ is a Bernoulli random variable with parameter $0.9$ independent of $X_0$ and of $S$. The label $Y$ is defined as a noisy decision influenced by the student's "original grade" $X_0$ prior to the $S$-based modification. More formally, let $U$ be a random variable independent of $X_0$ and of $S$, and uniformly distributed on $[0,1]$. Let $Y_0:=\chi\left\{U \geq X_0\right\}$ and define $$
+> Y:=Y_0 \chi\{X+S \geq \theta\} .
+> $$ Classification Error. In a typical classification problem, the labels $Y$ depend on both $X$ and $S$ so when we remove the bias it is not clear what we should compare against when calculating the classification performance. Observe that our experimental construction here allows access to the true ground-truth labels $$
+> Y^*:=\chi\left\{X_0 \geq \theta\right\} .
+> $$ Therefore, we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
+
+> Measure of Dependence. Let $\mathcal{F}_n:=\sigma\left(X_1, \ldots, X_n, S_1, \ldots, S_n\right), n \in \mathbb{N}$ be the $\sigma$-algebra generated by the training samples. In this experiment, we measure the dependence between the predicted labels $\widehat{Y}$ produced by any algorithm and the sensitive features $S$ as $$
+> \widetilde{\beta}(\widehat{Y}, S):=\frac{1}{2} \sum_{s \in\{0,1\}} \sum_{y \in\{0,1\}} E\left|P\left(\widehat{Y}=y, S=s \mid \mathcal{F}_n\right)-P\left(\widehat{Y}=y \mid \mathcal{F}_n\right) P(S=s)\right|
+> $$ which is closely related to the $\beta$-dependence (see, e.g. (Bradley, 2007, vol. I, p. 67)) between their respective $\sigma$-algebras. We obtain an empirical estimate of $\widetilde{\beta}(\sigma(\widehat{Y}), \sigma(S))$ by simply replacing the probabilities in (14) with corresponding empirical frequencies.
+
+> Experimental results. We generated $n=1000$ training and test samples as described above and the errors reported for each experiment are averaged over 10 repetitions. Figure 3 shows binary classification error vs. dependence between prediction and sensitive features for three different methods: classical Linear SVM, Linear FERM, and Oblivious SVM. In Figure 3a the error is calculated with respect to the observed labels which are intrinsically biased and in Figure 3a the error is calculated with respect to the true fair classification rule $Y^*$ given by (13). As can be seen in the plots, the true classification error of Oblivious SVM is smaller than that of the other two methods. Moreover, in both plots the $\beta$-dependence between the predicted labels produced by Oblivious SVM and the sensitive feature is close to 0 and is much smaller than that of the other two methods.
