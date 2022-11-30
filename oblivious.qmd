@@ -6,11 +6,28 @@ format: html
 # citation-location: margin
 ---
 
+| Student   | Time     |
+|----|------:|
+| Léo   |     5h |
+| Arthur   |     7h30 |
+
+
 In "Oblivious data for fairness with kernels", Steffen Grünewälder and Azadeh Khaleghi offer a very detailed motivation and explanation of the construction of "oblivious" features namely, in the prediction of $y$ from unsensitive information $x$ and sensitive information $s$, features $z=\phi(x)$ that realise some sort of independence from $s$. Such features may be released and used for prediction, without sharing any confidential data.
 
 The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article.
 
 ## Background
+
+::: {.callout-note}
+
+Bizarre l'exemple, proposer une interprétation. Probablement pour s'assurer que dans l'ex. on ait bien $y \not \perp s\mid x$.
+
+Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
+
+
+
+:::
+
 
 ## Application
 
@@ -65,7 +82,7 @@ clf = svm.SVC(kernel='precomputed')
 clf.fit(O, y_train)
 ```
 
-The `K = obl.build_K_lin(X,X)` line is straightforward, as it just builds the kernel matrix consisting in all dot products between line $i$ and column $j$ of `X`. On the other hand, the essence of the oblivious method proposed by the authors lay hidden behind the `O = obl.build_O_discrete(K,S)` line. It boils down to the following loop over the first $n=500$ observations, where all the averages `mean_iI`, `mean_IJ`, `mean_I`, `mean_i` and `Ephi` are computed on the second (independent) half. (This explains why `K` has size $2n$ × $2n$ whereas `O` has size $n\times n$.)
+The `K = obl.build_K_lin(X,X)` line is straightforward, as it just builds the kernel matrix consisting in all dot products between line $i$ and line $j$ of `X`. On the other hand, the essence of the oblivious method proposed by the authors lay hidden behind the `O = obl.build_O_discrete(K,S)` line. It boils down to the following loop over the first $n=500$ observations, where all the averages `mean_iI`, `mean_IJ`, `mean_I`, `mean_i` and `Ephi` are computed on the second (independent) half. (This explains why `K` has size $2n$ × $2n$ whereas `O` has size $n\times n$.)
 
 ```python
 for i in range(n): # n=500 (half the dataset length)
