@@ -8,7 +8,7 @@ format: html
 
 | Student   | Time     |
 |----|------:|
-| Léo   |     5h |
+| Léo   |     7h |
 | Arthur   |     7h30 |
 
 
