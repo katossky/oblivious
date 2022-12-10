@@ -2,13 +2,14 @@
 title: "Oblivious data for fairness with kernels"
 author: "Arthur Katossky & Léo Houairi"
 format: html
+
 # reference-location: margin
 # citation-location: margin
 ---
 
 | Student   | Time     |
 |----|------:|
-| Léo   |     7h |
+| Léo   |     8h15 |
 | Arthur   |     7h30 |
 
 
@@ -18,16 +19,70 @@ The article being very technical and very thorough, we here propose a simplified
 
 ## Background
 
+Imagine you have at our disposal data $(X,S)$ where the $X$'s are non-sensitive features but the $S$'s are sensitive features. The goal of the article is to devise a procedure that allows to generate a new random variable $Z$ that should ideally be 
+
+- Independant from $S$ 
+- As close to $X$ as possible, in some sense to be defined
+
+We will see that latter, the independance will be relaxed to a less binding constraint. This article particurlaly studies how to achieve this goal when we want to use kernel method.
+In this set-up, one basic idea could be to define $Z$ as: $Z = X - E[X|S] + E[X]$ The difficulty being that the conditional expectation need to be estimated. 
+
+### Mathematical set-up 
+
 ::: {.callout-note}
-
-Bizarre l'exemple, proposer une interprétation. Probablement pour s'assurer que dans l'ex. on ait bien $y \not \perp s\mid x$.
-
-Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
-
-
-
+Je paraphrase pas mal le début de l'article ici. 
+\mathbb \mathscr \mathcal \mathbf 
 :::
 
+We consider a probabity space $(\Omega, \mathcal{A}, P)$, a measurable space X in which the random variable X takes its values and S a measurable space S in which S takes its values. Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in \mathbb{H} (which is itself a space composed of functions). 
+
+### Problem formulation and relaxations
+
+At the begining, the problem considered is the construction of a random variable $Z: \Omega \rightarrow \mathbb{X}$ that is independant of $S$ and closer to $X$ than all other random variables respecting the independeance criterion. 
+
+Then, the authors choose to do a first relaxation of the independance criterion. Instead of considering the independance as a criterion, they focus of the interactions of the random variables considered with functions (je paraphrase là). The independance criterion becomes that, $\forall h \in H, \quad \forall g \in L2$
+
+$$E[h(Z)\times g(S)] = E[h(Z)] \times E[g(s)] $$
+Because of the most important property of the RKHS, this condition can be rewritten, again $\forall h \in H, \quad \forall g \in L2$
+$$E[\langle h, \phi(Z)\rangle \times g(S)] = E[ \langle h, \phi(Z)\rangle] \times E[g(s)] $$
+This is interesting, because $\phi(Z)$ leaves in the space H but **does not cover all the space**. Indeed, if $\phi$ is continuous, $\phi(Z)$ is a low-dimensional manifold denoted \mathcal{M} thereafter. 
+Then, the authors chose to introduce a new relaxation. Instead of considering $\phi(Z)$, they replace it by a random variable $\mathbf{Z}: \Omega \rightarrow \mathbb{H}$. So, we move from the "two-steps" where we had $Z: \Omega \rightarrow \mathbb{X}$ and then $\phi(Z): \mathbb{X} \rightarrow \mathbb{H}$ to going directly from $\Omega$ to $\mathbb{H}$. 
+
+After this relaxation, the authors defined the notion of $\mathbb{H}$**-Independence**. $\mathbf{Z}$ and $S$ are said $\mathbb{H}$-independent iff $h \in \mathbb{H}$ and all bounded measurable $g: \mathbb{S} \rightarrow \mathbb{R}$, we have: 
+$$E[\langle h, \mathbf{Z}\rangle \times g(S)] = E[ \langle h, \mathbf{Z}\rangle] \times E[g(s)] $$
+This criterion is very close to the precedent one, except that again, we go directly to $\mathbb{H}$. 
+
+The problems becomes finding a $\mathbf{Z}$ that is $\mathbb{H}$-independent from S and as close as possible to $\phi(X)$ (in the $||\mathbf{Z} - \phi(X)||_2$, even if I am not sure to know what it means). 
+
+The crucial point is to remark that if $\mathbf{Z}$ can be written as $\phi(W)$ for some $W$ in $\mathbb{X}$, then it is easy to show that $\mathbb{H}$-independence implies independence between a kernel estimator ($\langle \hat h, \mathbf{Z} \rangle$) and $S$. Of course, nothing guarantees that $\mathbf{Z}$ lies in the image of $\phi$ but, if it is close to this image (ie close to the manifold $\mathcal{M}$), it could be **projected** on the manifold. At the bottom of page 6, the authors are defining a notion of distance of $\mathbf{Z}$ to the manifold. Then, proposition 1 shows that $\exists W \in \mathbb{X}$ that attains this minimal value. 
+
+Section 4 is mostly about estimating empirically the distance from $\mathbf{Z}$ to $\mathcal{M}$ and showing how to bound the approximation. 
+
+In section 5, we are going back to the problem of chosing $\mathbf{Z}$. To do this, we recall the initial formula $Z = X - E[X|S] + E[X]$. But now we are working in the $\mathcal{M}$ space, so it simply becomes:
+$$Z = \phi(X) - E[\phi(X)|S] + E[\phi(X)]$$
+"Such feature is $\mathbb{H}$-independent from $S$. $\mathbf{Z}$ is the best approximation of $\phi(X)$ in the MSE under $\mathbb{H}$-independence. 
+
+Section 6 focuses on the generation of the oblivious features. 
+The conditional estimation is estimated from the data using a plug-in estimator using half of the data (ie simply replacing probabilities by empirical probabilities). Subsection 6.2 focuses on how to control the error of this estimation. The other half of the data can then be used to create a predictor. 
+Because the article focuses on kernel methods, the values of $\mathbf{Z}$ never need to be computed, only their scalar products need be. For the end of the method, the article distinguishes between two cases:
+
+- **Case 1 (M-Oblivious)**. This submethod works in cases where $Y|X$ is independent from S (which is sort of a markovian seting $S \rightarrow X \rightarrow Y$). In this case, a kernel is estimated from the second half of the data as usual, but the prediction on the new data point is done after transforming $X$ into $\mathbf{Z}$. 
+- **Case 2 Oblivious**. When $S$ can affect the label $Y$ not only through X but also through other means, the authors propose to compute an oblivious kernel matrix, then to proceed as usual. 
+
+### Concernant l'exemple
+ 
+::: {.callout-note}
+
+Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
+:::
+
+The binary classification exemple in section 7.1 is pretty strange, and some of the claims (about parameter's values) are contradicted by the actual implementation. 
+Note that the exemple falls in the **Oblivious** case. Indeed, the minority group is disavantdged twice in the process:
+
+- First, their grade $X$ is diminished
+- Secondly, their grade is compared to a higher threshold.  
+
+The authors insist on the difficulty of estimating how well a "fair" procedure works. Comparing the predictions to the real labels is not sufficient because this labels are considered, by definition, to be biased. In their synthetic case, the authors can compare their prediction with the true / fair label. 
 
 ## Application
 
