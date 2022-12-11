@@ -14,29 +14,49 @@ format:
 | Léo   |     8h15 |
 | Arthur   |     9h00 |
 
-In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on $(x_1...x_n)$, may be expressed so as to rely on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations.
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathcal{X}\to\mathcal{H}$ is the associated _feature map_.
 
-In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$. Such features may be released and used for prediction, without sharing any confidential data.
+In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$.
 
-The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article.
+The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article. The following report is organised in two sections, where we first introduce the theoretical background and then explore an application to binary classification with support vector machines.
 
 ## Background
 
-Imagine you have at our disposal data $(X,S)$ where the $X$'s are nonsensitive features but the $S$'s are sensitive features. The goal of the article is to devise a procedure that allows to generate a new random variable $Z$ that should ideally be 
+Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathcal{Y}\to\mathcal{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead.
 
-- Independent from $S$ 
-- As close to $X$ as possible, in some sense to be defined
+The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
-We will see that later, the independence will be relaxed to a less binding constraint. This article particularly studies how to achieve this goal when we want to use kernel method.
-In this set-up, one basic idea could be to define $Z$ as: $Z = X - E[X|S] + E[X]$ The difficulty being that the conditional expectation need to be estimated. 
+- be independent from $s$, a very hard constraint that the authors later relax
+- be close to $x$, in some sense to be defined
 
-### Mathematical set-up 
+The most straight-forward solution would be to define $z$ as the residual of the orthogonal projection of $x$ on $s$ : $$z \overset{\Delta}= x - \mathbb{E}(x \mid s) + \mathbb{E}x$$
+
+However, in the specific context of kernel methods, the training of a model does not require access to the individual $x_i$s but rather only to the kernel matrix $K$, whose terms are $K_{ij}=k(x_i,x_j)=\langle\varphi(x_i),\varphi(x_j)\rangle$. So we might as well directly define $\mathbf{z}$ as the residual of the orthogonal projection of $\varphi(x)$ on $s$: $$\mathbf{z} \overset{\Delta}= \varphi(x) - \mathbb{E}\big[\varphi(x)\mid s\big] + \mathbb{E}\varphi(x)$${#eq-boldz}
+... so that we get eventually $K_{ij}\simeq \langle\mathbf{z}_i,\mathbf{z}_j\rangle$ and $K\perp\!\!\!\perp (s_n)$.
+
+The question are : why can't we guarantee strict independence? Do we loose anything when moving from $z$ to $\mathbf{z}$? What relaxation of the strict independence constraint can we guarantee? What bounds do we get when we estimate the expectations in @eq-boldz on specific samples ? Note that each of theses answers are complicated by the fact that $\varphi$ (and thus $\mathbf{z}$) take values in a function space $\mathcal{H}\subseteq \mathbb{R}^{\mathcal{X}}$ that may not be finite.
 
 ::: {.callout-note}
-Je paraphrase pas mal le début de l'article ici. 
+
+## Kernel methods
+
+Des définition ici.
+
+Kernels considered in the articles are:
+
+- The **linear kernel** $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $f_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$.
+- The kernel associated with the RKHS of the linear combinations of 
+
 :::
 
+
+::: {.callout-note}
+
+## Formal mathematical setup
+
 We consider a probabity space $(\Omega, \mathcal{A}, P)$, a measurable space $\mathcal{X}$ in which the random variable X takes its values and S a measurable space S in which S takes its values. Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in $\mathbb{H}$ (which is itself a space composed of functions). 
+
+:::
 
 ### Problem formulation and relaxations
 
@@ -210,6 +230,4 @@ $$
 > \widetilde{\beta}(\widehat{Y}, S):=\frac{1}{2} \sum_{s \in\{0,1\}} \sum_{y \in\{0,1\}} E\left|P\left(\widehat{Y}=y, S=s \mid \mathcal{F}_n\right)-P\left(\widehat{Y}=y \mid \mathcal{F}_n\right) P(S=s)\right|
 > $$ which is closely related to the $\beta$-dependence (see, e.g. (Bradley, 2007, vol. I, p. 67)) between their respective $\sigma$-algebras. We obtain an empirical estimate of $\widetilde{\beta}(\sigma(\widehat{Y}), \sigma(S))$ by simply replacing the probabilities in (14) with corresponding empirical frequencies.
 
-> Experimental results. We generated $n=1000$ training and test samples as described above and the errors reported for each experiment are averaged over 10 repetitions. Figure 3 shows binary classification error vs. dependence between prediction and sensitive features for three different methods: classical Linear SVM, Linear FERM, and Oblivious SVM. In Figure 3a the error is calculated with respect to the observed labels which are intrinsically biased and in Figure 3a the error is calculated with respect to the true fair classification rule $Y^*$ given by (13). As can be seen in the plots, the true classification error of Oblivious SVM is smaller than that of the other two methods. Moreover, in both plots the $\beta$-dependence between the predicted labels produced by Oblivious SVM and the sensitive feature is close to 0 and is much smaller than that of the other two methods.
-
-## References {.unnumbered}
+> Experimental results. We generated $n=1000$ training and test samples as described above and the errors reported for each experiment are averaged over 10 repetitions. Figure 3 shows binary classification error vs. dependence between prediction and sensitive features for three different methods: classical Linear SVM, Linear FERM, and Oblivious SVM. In Figure 3a the error is calculated with respect to the observed labels which are intrinsically biased and in Figure 3a the error is calculated with respect to the true fair classification rule $Y^*$ given by (13). As can be seen in the plots, the true classification error of Oblivious SVM is smaller than that of the other two methods. Moreover, in both plots the $\beta$-dependence between the predicted labels produced by Oblivious SVM and the sensitive feature is close to 0 and 
