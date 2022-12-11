@@ -1,40 +1,40 @@
 ---
 title: "Oblivious data for fairness with kernels"
 author: "Arthur Katossky & Léo Houairi"
-format: html
-
+bibliography: bibliography.bib
+format:
+  pdf
+# classoption: twocolumn
 # reference-location: margin
 # citation-location: margin
 ---
 
 | Student   | Time     |
-|----|------:|
+|----|-------|
 | Léo   |     8h15 |
 | Arthur   |     7h30 |
 
-
-In "Oblivious data for fairness with kernels", Steffen Grünewälder and Azadeh Khaleghi offer a very detailed motivation and explanation of the construction of "oblivious" features namely, in the prediction of $y$ from unsensitive information $x$ and sensitive information $s$, features $z=\phi(x)$ that realise some sort of independence from $s$. Such features may be released and used for prediction, without sharing any confidential data.
+In "Oblivious data for fairness with kernels" (@2021-oblivious), Steffen Grünewälder and Azadeh Khaleghi offer a very detailed motivation and explanation of the construction of "oblivious" features namely, in the prediction of $y$ from nonsensitive information $x$ and sensitive information $s$, features $z=\phi(x)$ that realise some sort of independence from $s$. Such features may be released and used for prediction, without sharing any confidential data.
 
 The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article.
 
 ## Background
 
-Imagine you have at our disposal data $(X,S)$ where the $X$'s are non-sensitive features but the $S$'s are sensitive features. The goal of the article is to devise a procedure that allows to generate a new random variable $Z$ that should ideally be 
+Imagine you have at our disposal data $(X,S)$ where the $X$'s are nonsensitive features but the $S$'s are sensitive features. The goal of the article is to devise a procedure that allows to generate a new random variable $Z$ that should ideally be 
 
-- Independant from $S$ 
+- Independent from $S$ 
 - As close to $X$ as possible, in some sense to be defined
 
-We will see that latter, the independance will be relaxed to a less binding constraint. This article particurlaly studies how to achieve this goal when we want to use kernel method.
+We will see that later, the independence will be relaxed to a less binding constraint. This article particularly studies how to achieve this goal when we want to use kernel method.
 In this set-up, one basic idea could be to define $Z$ as: $Z = X - E[X|S] + E[X]$ The difficulty being that the conditional expectation need to be estimated. 
 
 ### Mathematical set-up 
 
 ::: {.callout-note}
 Je paraphrase pas mal le début de l'article ici. 
-\mathbb \mathscr \mathcal \mathbf 
 :::
 
-We consider a probabity space $(\Omega, \mathcal{A}, P)$, a measurable space X in which the random variable X takes its values and S a measurable space S in which S takes its values. Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in \mathbb{H} (which is itself a space composed of functions). 
+We consider a probabity space $(\Omega, \mathcal{A}, P)$, a measurable space $\mathcal{X}$ in which the random variable X takes its values and S a measurable space S in which S takes its values. Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in $\mathbb{H}$ (which is itself a space composed of functions). 
 
 ### Problem formulation and relaxations
 
@@ -45,7 +45,7 @@ Then, the authors choose to do a first relaxation of the independance criterion.
 $$E[h(Z)\times g(S)] = E[h(Z)] \times E[g(s)] $$
 Because of the most important property of the RKHS, this condition can be rewritten, again $\forall h \in H, \quad \forall g \in L2$
 $$E[\langle h, \phi(Z)\rangle \times g(S)] = E[ \langle h, \phi(Z)\rangle] \times E[g(s)] $$
-This is interesting, because $\phi(Z)$ leaves in the space H but **does not cover all the space**. Indeed, if $\phi$ is continuous, $\phi(Z)$ is a low-dimensional manifold denoted \mathcal{M} thereafter. 
+This is interesting, because $\phi(Z)$ leaves in the space H but **does not cover all the space**. Indeed, if $\phi$ is continuous, $\phi(Z)$ is a low-dimensional manifold denoted $\mathcal{M}$ thereafter. 
 Then, the authors chose to introduce a new relaxation. Instead of considering $\phi(Z)$, they replace it by a random variable $\mathbf{Z}: \Omega \rightarrow \mathbb{H}$. So, we move from the "two-steps" where we had $Z: \Omega \rightarrow \mathbb{X}$ and then $\phi(Z): \mathbb{X} \rightarrow \mathbb{H}$ to going directly from $\Omega$ to $\mathbb{H}$. 
 
 After this relaxation, the authors defined the notion of $\mathbb{H}$**-Independence**. $\mathbf{Z}$ and $S$ are said $\mathbb{H}$-independent iff $h \in \mathbb{H}$ and all bounded measurable $g: \mathbb{S} \rightarrow \mathbb{R}$, we have: 
@@ -209,3 +209,5 @@ $$
 > $$ which is closely related to the $\beta$-dependence (see, e.g. (Bradley, 2007, vol. I, p. 67)) between their respective $\sigma$-algebras. We obtain an empirical estimate of $\widetilde{\beta}(\sigma(\widehat{Y}), \sigma(S))$ by simply replacing the probabilities in (14) with corresponding empirical frequencies.
 
 > Experimental results. We generated $n=1000$ training and test samples as described above and the errors reported for each experiment are averaged over 10 repetitions. Figure 3 shows binary classification error vs. dependence between prediction and sensitive features for three different methods: classical Linear SVM, Linear FERM, and Oblivious SVM. In Figure 3a the error is calculated with respect to the observed labels which are intrinsically biased and in Figure 3a the error is calculated with respect to the true fair classification rule $Y^*$ given by (13). As can be seen in the plots, the true classification error of Oblivious SVM is smaller than that of the other two methods. Moreover, in both plots the $\beta$-dependence between the predicted labels produced by Oblivious SVM and the sensitive feature is close to 0 and is much smaller than that of the other two methods.
+
+## References {.unnumbered}
