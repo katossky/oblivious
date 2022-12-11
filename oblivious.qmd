@@ -12,9 +12,11 @@ format:
 | Student   | Time     |
 |----|-------|
 | Léo   |     8h15 |
-| Arthur   |     7h30 |
+| Arthur   |     9h00 |
 
-In "Oblivious data for fairness with kernels" (@2021-oblivious), Steffen Grünewälder and Azadeh Khaleghi offer a very detailed motivation and explanation of the construction of "oblivious" features namely, in the prediction of $y$ from nonsensitive information $x$ and sensitive information $s$, features $z=\phi(x)$ that realise some sort of independence from $s$. Such features may be released and used for prediction, without sharing any confidential data.
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on $(x_1...x_n)$, may be expressed so as to rely on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations.
+
+In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$. Such features may be released and used for prediction, without sharing any confidential data.
 
 The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article.
 
