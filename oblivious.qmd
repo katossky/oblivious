@@ -12,9 +12,9 @@ format:
 | Student   | Time     |
 |----|-------|
 | Léo   |     8h15 |
-| Arthur   |     9h00 |
+| Arthur   |     12h00 |
 
-In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathcal{X}\to\mathcal{H}$ is the associated _feature map_.
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_.
 
 In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$.
 
@@ -22,7 +22,7 @@ The article being very technical and very thorough, we here propose a simplified
 
 ## Background
 
-Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathcal{Y}\to\mathcal{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead.
+Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathbb{Y}\to\mathbb{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead.
 
 The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
@@ -34,7 +34,18 @@ The most straight-forward solution would be to define $z$ as the residual of the
 However, in the specific context of kernel methods, the training of a model does not require access to the individual $x_i$s but rather only to the kernel matrix $K$, whose terms are $K_{ij}=k(x_i,x_j)=\langle\varphi(x_i),\varphi(x_j)\rangle$. So we might as well directly define $\mathbf{z}$ as the residual of the orthogonal projection of $\varphi(x)$ on $s$: $$\mathbf{z} \overset{\Delta}= \varphi(x) - \mathbb{E}\big[\varphi(x)\mid s\big] + \mathbb{E}\varphi(x)$${#eq-boldz}
 ... so that we get eventually $K_{ij}\simeq \langle\mathbf{z}_i,\mathbf{z}_j\rangle$ and $K\perp\!\!\!\perp (s_n)$.
 
-The question are : why can't we guarantee strict independence? Do we loose anything when moving from $z$ to $\mathbf{z}$? What relaxation of the strict independence constraint can we guarantee? What bounds do we get when we estimate the expectations in @eq-boldz on specific samples ? Note that each of theses answers are complicated by the fact that $\varphi$ (and thus $\mathbf{z}$) take values in a function space $\mathcal{H}\subseteq \mathbb{R}^{\mathcal{X}}$ that may not be finite.
+The question are : why can't we guarantee strict independence? Do we loose anything when moving from $z$ to $\mathbf{z}$? What relaxation of the strict independence constraint can we guarantee? What bounds do we get when we estimate the expectations in @eq-boldz on specific samples ? Note that each of theses answers are complicated by the fact that $\varphi$ (and thus $\mathbf{z}$) take values in a function space $\mathcal{H}\subseteq \mathbb{R}^{\mathbb{X}}$ that may not be finite.
+
+::: {.callout-note}
+
+## Mathematical setup and notations
+
+We consider a probability space $(\Omega, \mathcal{A}, \mathbb{P})$ and a measurable space $(\mathbb{X}, \mathcal{X})$ (resp. $(\mathbb{S},\mathcal{S})$) in which the random variables $x$ and $z$ (resp. $s$) take their values.
+
+For $a,b\in\mathbb{R}^d$, we note $a \cdot b = a^\top b$ the standard dot product.
+
+:::
+
 
 ::: {.callout-note}
 
@@ -42,21 +53,42 @@ The question are : why can't we guarantee strict independence? Do we loose anyth
 
 Des définition ici.
 
-Kernels considered in the articles are:
+Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in $\mathbb{H}$ (which is itself a space composed of functions). 
 
-- The **linear kernel** $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $f_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$.
-- The kernel associated with the RKHS of the linear combinations of 
+Kernels and RKHSs considered in the articles are:
 
-:::
-
-
-::: {.callout-note}
-
-## Formal mathematical setup
-
-We consider a probabity space $(\Omega, \mathcal{A}, P)$, a measurable space $\mathcal{X}$ in which the random variable X takes its values and S a measurable space S in which S takes its values. Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in $\mathbb{H}$ (which is itself a space composed of functions). 
+- The **linear kernel** $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $h_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$, endowed with the scalar product $\langle h_\mathbf{u},h_\mathbf{v}\rangle=\mathbf{u}\cdot \mathbf{v}$. Noting that $f_\mathbf{w}=k(␣,\mathbf{w})$ and that $f_\mathbf{w}(x)=k(x,\mathbf{w})$, we can verify the reproducing property: $\forall h \in\mathcal{H}: \langle h ,k(␣,x)\rangle=h(x)$.
+- < The RKHS containing $\sin$ and $x \mapsto x^2$ the appears in fig.2, but I am not sure exactly how to define it. >
 
 :::
+
+### Independence is too strong a requirement
+
+The ideal objective for oblivious features would be to construct a random variable $z$ with values in $\mathbb{X}$ that is both independent from $s$ and close to $x$. Assume distance is measured as the $L^2$ norm, we would define: $$z = \arg\min_{a\in L^2(\mathcal{X})}\|a-x\|_2\quad s.t. \quad a \perp\!\!\!\perp s$$
+
+The authors rule out such a solution without much formalism :
+
+> Completely removing the dependence of $x$ on $s$ without changing $x$ drastically is an intricate task that is rife with difficulties.
+
+We provide the following toy example. Consider the case where $x=f(s)$ for some measurable function $f:\mathbb{S}\to\mathbb{X}$. As $a \perp\!\!\!\perp s \iff \forall g \text{ measurable}: a \perp\!\!\!\perp g(s)$, this in particular true for $f(s)\equiv x$. Thus we have $z \perp\!\!\!\perp x$, which together with $L^2$ minimisation leads to $z\overset{a.s.}=\mathbb{E}x$. This defeats the purpose of preserving the variations of $x$ in $z$.
+
+Following the authors, we thus move from the strict independence assumption to the milder no-correlation assumption: $\mathbb{cov}(a_i,s_j)=0$ for each component of $a$ and $s$ (assuming both $\mathbb{X}$ and $\mathbb{S}$ are finite-dimensional). If $z$ and $s$ were Gaussian, this would be an equivalence, but it is not true in the general case.
+
+### No-correlation between $z$ and $s$ is an excessive restriction
+
+Decorrelation together with square-error minimisation is a well-known problem, whose solution is the residual of the projection of $x$ onto $s$ (where projection is defined from the vector product $\langle a,b\rangle=\mathbb{E}[ab]$) : 
+$$z=x-\mathbb{E}\big(x\mid s\big) +\mathbb{E}x$$
+
+However there are at least two reasons for not liking this solution:
+
+1. Covariance is a bilinear operator. This is nice because we can take advantage of linearity in computation. But the price to pay is that all non-linear dependencies will be missed. **[GIVE EXAMPLES]**
+2. More fundamentally, we need the $L^2$ norm to have a sense on $\mathcal{X}$, which may not be the case for many objects on which kernel-methods are defined.
+
+For both reasons, we may want to move away from defining $z$ in the $\mathbb{X}$ space, and rather define $\mathbf{z}$ in the $\mathcal{H}$ space where the feature map $\varphi(x)$ lives. This helps on both sides as not only can covariance in an infinite feature space capture subtle forms of dependence that the linear case could not but we only have to define a distance on  $\varphi(x)$, which is easy since $\varphi(x)$ is a $\mathbb{R}^d$-valued function (e.g. texts).
+
+### Relaxation
+
+we should just replace z by phi(z) but instead, we use boldz. More flexibility as boldz need not have any corresponding preimage by phi. phi(calz) is a manyfold that is contained into the Z space.
 
 ### Problem formulation and relaxations
 
