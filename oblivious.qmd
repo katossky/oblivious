@@ -11,10 +11,10 @@ format:
 
 | Student   | Time     |
 |----|-------|
-| Léo   |     8h15 |
+| Léo   |     9h00 |
 | Arthur   |     12h00 |
 
-In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_.
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_. \textbf{k: c'est pas plutôt de $k:\mathcal{X}\times\mathcal{X}\to\mathbb{R}$}
 
 In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$.
 
@@ -22,7 +22,7 @@ The article being very technical and very thorough, we here propose a simplified
 
 ## Background
 
-Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathbb{Y}\to\mathbb{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead.
+Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathbb{Y}\to\mathbb{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead. \textbf{Isnt't it rather $f:\mathbb{X}\to\mathbb{Y}$? I'm unsure}
 
 The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
@@ -58,7 +58,7 @@ Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed o
 Kernels and RKHSs considered in the articles are:
 
 - The **linear kernel** $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $h_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$, endowed with the scalar product $\langle h_\mathbf{u},h_\mathbf{v}\rangle=\mathbf{u}\cdot \mathbf{v}$. Noting that $f_\mathbf{w}=k(␣,\mathbf{w})$ and that $f_\mathbf{w}(x)=k(x,\mathbf{w})$, we can verify the reproducing property: $\forall h \in\mathcal{H}: \langle h ,k(␣,x)\rangle=h(x)$.
-- < The RKHS containing $\sin$ and $x \mapsto x^2$ the appears in fig.2, but I am not sure exactly how to define it. >
+- < The RKHS containing $\sin$ and $x \mapsto x^2$ the appears in fig.2, but I am not sure exactly how to define it. > (Léo: I am not sure it is necessary)
 
 :::
 
@@ -123,22 +123,14 @@ Because the article focuses on kernel methods, the values of $\mathbf{Z}$ never 
 - **Case 1 (M-Oblivious)**. This submethod works in cases where $Y|X$ is independent from S (which is sort of a markovian seting $S \rightarrow X \rightarrow Y$). In this case, a kernel is estimated from the second half of the data as usual, but the prediction on the new data point is done after transforming $X$ into $\mathbf{Z}$. 
 - **Case 2 Oblivious**. When $S$ can affect the label $Y$ not only through X but also through other means, the authors propose to compute an oblivious kernel matrix, then to proceed as usual. 
 
-### Concernant l'exemple
+## Application to binary classification 
  
 ::: {.callout-note}
 
 Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
 :::
 
-The binary classification exemple in section 7.1 is pretty strange, and some of the claims (about parameter's values) are contradicted by the actual implementation. 
-Note that the exemple falls in the **Oblivious** case. Indeed, the minority group is disavantdged twice in the process:
-
-- First, their grade $X$ is diminished
-- Secondly, their grade is compared to a higher threshold.  
-
-The authors insist on the difficulty of estimating how well a "fair" procedure works. Comparing the predictions to the real labels is not sufficient because this labels are considered, by definition, to be biased. In their synthetic case, the authors can compare their prediction with the true / fair label. 
-
-## Application
+In this section, we present an example of the applicaiton of the method, in the case of binary classification. We refer both to the text of the article and to the code in their implementation (available on github). Note that some of the claims made in the paper, about the value of some parameters, are contradicted by their actual implementation. Because we comment part of the code, we considered the parameter's value of the code. 
 
 The application uses synthetic data representing the grades of students discriminated according to some sensitive feature. $\tilde s\sim B(0.5)$ is the (binary) sensitive feature[^1]. The grades are biased towards the high-prestige status associated with $\tilde s=1$, which the authors model as: $$\tilde x\overset{def}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$ ... where $\tilde x_0\sim\mathcal{N}_{[1,4]}(2.5,0.5)$ is the baseline grade and $\tilde b\sim B(0.9)$ is the 1-unit bias for group $s=1$ or against group $s=0$ [^2].
 
@@ -178,6 +170,11 @@ Eventually, the authors construct a decision mimicking some decision made based 
     Y = [stats.bernoulli(Y_Bernoulli_params[i]).rvs(1) for i in range(len(Y_Bernoulli_params))]
     Y = Y * ((non_sensitive_features + sensitive_features >= threshold)*1)
     ```
+    
+Note that the exemple falls in the **Oblivious** case, that is that $Y|X$ is not independent from $S$. Indeed, the minority group is disavantdged twice in the process:
+
+- First, their grade $\tilde x$ is diminished.
+- Secondly, their grade is compared to a higher threshold: $\theta - \tilde s$. Indeed, for the advantaged group, $\tilde s = 1$.      
 
 Contrary to the mathematical background, the implementation is not detailed in the paper, so we reconstruct it from the code. In [the SVM example]( https://github.com/azalk/Oblivious/blob/main/SVM_Example.py ), the substantial part is:
 
@@ -219,12 +216,12 @@ for i in range(n): # n=500 (half the dataset length)
     O[j,i] = O[i,j]
 ```
 
-## Conclusions
+The authors insist on the difficulty of estimating how well a fair procedure works. Comparing the predictions to the real labels is not sufficient because this labels are considered, by definition, to be biased. In their synthetic case, the authors can compare their prediction with the true, fair label. THe authors write: 
 
 > \[in our experiment\], we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
 
 
-## Source
+# Source (paper)
 
 ### Generating an oblivious random variable
 
