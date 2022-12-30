@@ -11,7 +11,7 @@ format:
 
 | Student   | Time     |
 |----|-------|
-| Léo   |     9h00 |
+| Léo   |     10h30 |
 | Arthur   |     12h00 |
 
 ::: {.callout-note}
