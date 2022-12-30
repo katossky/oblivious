@@ -14,7 +14,13 @@ format:
 | Léo   |     9h00 |
 | Arthur   |     12h00 |
 
-In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_. \textbf{k: c'est pas plutôt de $k:\mathcal{X}\times\mathcal{X}\to\mathbb{R}$}
+::: {.callout-note}
+
+léo: est-ce qu'on rajoute une petite note pour expliquer notre changement de notation par rapport à l'article (les x et z au lieu d'avoir des X et des Z partout). Et les tildes pour la partie sur la classification binaire, même si je ne comprends pas bien leur classification. 
+
+:::
+
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathcal{H}\times\mathcal{H}\to\mathbb{R}$ is called the _kernel_ and $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_. \textbf{Léo, k: c'est pas plutôt de $k:\mathcal{X}\times\mathcal{X}\to\mathbb{R}$}
 
 In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$.
 
@@ -22,7 +28,7 @@ The article being very technical and very thorough, we here propose a simplified
 
 ## Background
 
-Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathbb{Y}\to\mathbb{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead. \textbf{Isnt't it rather $f:\mathbb{X}\to\mathbb{Y}$? I'm unsure}
+Imagine you have at our disposal data $(x_n,s_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. You want to provide a way to train a kernel-based model $f:\mathbb{Y}\to\mathbb{X}$ on $(y_n,x_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but you want your method to be independent of the which specific model $f$ you use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(y_n,z_n)$ instead. \textbf{Léo: ce serait pas plutôt $f:\mathbb{X}\to\mathbb{Y}$? J'ai un doute}
 
 The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
@@ -121,7 +127,18 @@ The conditional estimation is estimated from the data using a plug-in estimator 
 Because the article focuses on kernel methods, the values of $\mathbf{Z}$ never need to be computed, only their scalar products need be. For the end of the method, the article distinguishes between two cases:
 
 - **Case 1 (M-Oblivious)**. This submethod works in cases where $Y|X$ is independent from S (which is sort of a markovian seting $S \rightarrow X \rightarrow Y$). In this case, a kernel is estimated from the second half of the data as usual, but the prediction on the new data point is done after transforming $X$ into $\mathbf{Z}$. 
-- **Case 2 Oblivious**. When $S$ can affect the label $Y$ not only through X but also through other means, the authors propose to compute an oblivious kernel matrix, then to proceed as usual. 
+- **Case 2 Oblivious**. When $S$ can affect the label $Y$ not only through X but also through other means, the authors propose to compute an oblivious kernel matrix (denoted $\mathcal{O}$), then to proceed as usual. 
+
+
+### Computing the oblivious matrix
+
+The oblivious kernel matrix $\mathbb{O}$ is a n by n matrix containing the scalar products of the $\mathbf{z}$ ($\mathcal{O}_{ij} = \langle \mathbf{z}_i, \mathbf{z}_j\rangle$). Computing this matrix boils down to computing $\langle \mathbf{z}_i, \mathbf{z}_j\rangle \quad \forall i, j$. Using @eq-boldz, and given that we are doing estimations, we can write that: $$\mathbf{z}_i = \varphi(x_i) - \mathbb{E}_n\big[\varphi(x_i)\mid s_i\big] + \mathbb{E}\varphi(x_i)$$
+So, the scalar product that we want to estimate is: 
+$$\langle \varphi(x_i) - \mathbb{E}_n\big[\varphi(x_i)\mid s_i\big] + \mathbb{E}\varphi(x_i), \quad \varphi(x_j) - \mathbb{E}_n\big[\varphi(x_j)\mid s_j\big] + \mathbb{E}\varphi(x_j) \rangle$$
+This scalar product can be dcomposed in 9 terms. 
+In the article, the appendix E1 explains how each term can be boiled down to kernel evaluations, and provide a generic algorithm to do so (including a kernel $k(.,.)$ to be chosen). 
+
+--- 
 
 ## Application to binary classification 
  
@@ -130,46 +147,65 @@ Because the article focuses on kernel methods, the values of $\mathbf{Z}$ never 
 Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
 :::
 
-In this section, we present an example of the applicaiton of the method, in the case of binary classification. We refer both to the text of the article and to the code in their implementation (available on github). Note that some of the claims made in the paper, about the value of some parameters, are contradicted by their actual implementation. Because we comment part of the code, we considered the parameter's value of the code. 
+In this section, we present an example of the application of the method to the binary classification. We refer both to the text of the article and to the code in their implementation \footnote{https://github.com/azalk/Oblivious}. Some of the claims made in the paper, especially about the value of parameters, are contradicted by the implementation. In such case, we will refer to what we found in the implementation. 
+
+The application is based on synthetic data. In an imaginary scenario, students receive a grade and are suppose to vaidate if this grade exceed an arbitrarily chosen threshold $\theta$. the students are discriminated according to some (binary) sensitive feature: $\tilde s\sim B(0.5)$ \footnote{In the implementation, half of the synthetic data has $s= 1$ and the other half $s=0$, deterministically}. We refer to the students with $s=1$ as the _minority group_ and to the other students as the _advantaged group_.
+
+The original grade is denoted $\tilde x_0$ and it follows a gaussian truncated between 1 and 4. Then, the grades are biased towards the adavantaged group, which the authors model as:
+$$\tilde x\overset{def}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$
+... where $\tilde b\sim B(0.9)$, a Bernoulli random variable, is the 1-unit bias for group $s=1$ or against group $s=0$. So, most students in the adavantaged group will have $\tilde x > \tilde x_0$ and most students in the minority group will have $\tilde x < \tilde x_0$.
+
+The decision to make a student validate (or not) is denoted by the letter $y$. The logical decision would be:
+$$y^* \overset{\Delta}= \mathbb{1}(\tilde x_0 > \theta)$$
+Instead, the decision is a mix of the student true ability (as given by $x_0$) and the biased one (as given by $x$):
+$$\tilde y \overset{\Delta}= \mathbb{1}(\tilde u\geqslant \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$$
+
+with $\tilde u \sim \mathcal{U}(1,4)$, or equivalently, $\mathbb{1}(\tilde u\geqslant \tilde x_0) \sim \mathcal{B}(\tilde x_0/4)$ \textbf{De mont point de vue il y a une erreur et ce devrait être $\mathbb{1}(\tilde u\leqslant \tilde x_0)$, ie plus ta note est élevé plus tu as de cahnce que $\tilde y_0 = 1$}
+
+Observe that this exemple falls in the \textbf{oblivious case}, because, $y$ given $x$ is not independent from $s$. Indeed, the minority group is disadvantaged twice in the process: (i) their grade $\tilde x$ can be diminished, (ii) as compared to the other group, their grade is compared to a higher threshold $\theta - \tilde s$, because $\tilde s = 1$ for the advantaged group. 
+
+--- 
 
 The application uses synthetic data representing the grades of students discriminated according to some sensitive feature. $\tilde s\sim B(0.5)$ is the (binary) sensitive feature[^1]. The grades are biased towards the high-prestige status associated with $\tilde s=1$, which the authors model as: $$\tilde x\overset{def}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$ ... where $\tilde x_0\sim\mathcal{N}_{[1,4]}(2.5,0.5)$ is the baseline grade and $\tilde b\sim B(0.9)$ is the 1-unit bias for group $s=1$ or against group $s=0$ [^2].
 
-[^1]: In the code, half of the synthetic data has $s=1$ the other half $s=0$, deterministically:
-    ```python
-    unique_sensitive_feature_values=[0,1]
-    sensitive_features =
-      [unique_sensitive_feature_values[0]] * n_samples +
-      [unique_sensitive_feature_values[1]] * n_samples
-    ```
+\textbf{Sensitive feature in the code} In the code, half of the synthetic data has $s=1$ the other half $s=0$, deterministically:
+
+```python
+unique_sensitive_feature_values=[0,1]
+sensitive_features =
+[unique_sensitive_feature_values[0]] * n_samples +
+[unique_sensitive_feature_values[1]] * n_samples
+```
     
-[^2]: In the code:
-    ```python
-    max_non_sensitive_feature_value = 4.0
-    min_non_sensitive_feature_value = 1.0
-    mu = 0.5 * (max_non_sensitive_feature_value+min_non_sensitive_feature_value)
-    Lower = generate_truncnorm_samples(
-      n_samples, min_non_sensitive_feature_value,
-      max_non_sensitive_feature_value, mu, sigma
-    )
-    Upper = generate_truncnorm_samples(
-      n_samples, min_non_sensitive_feature_value,
-      max_non_sensitive_feature_value, mu, sigma
-    )
-    non_sensitive_features = 
-      [Lower-stats.bernoulli(0.9).rvs(n_samples)*1]+
-      [Upper+stats.bernoulli(0.9).rvs(n_samples)*1]
-    ```
+\textbf{X0 in the code} In the code:
+
+```python
+max_non_sensitive_feature_value = 4.0
+min_non_sensitive_feature_value = 1.0
+mu = 0.5 * (max_non_sensitive_feature_value+min_non_sensitive_feature_value)
+Lower = generate_truncnorm_samples(
+n_samples, min_non_sensitive_feature_value,
+max_non_sensitive_feature_value, mu, sigma
+)
+Upper = generate_truncnorm_samples(
+n_samples, min_non_sensitive_feature_value,
+max_non_sensitive_feature_value, mu, sigma
+)
+non_sensitive_features = 
+[Lower-stats.bernoulli(0.9).rvs(n_samples)*1]+
+[Upper+stats.bernoulli(0.9).rvs(n_samples)*1]
+```
 
 Eventually, the authors construct a decision mimicking some decision made based on the students' official results. This decision is based on a mix of the true student abilities (as given by $x_0$) and the biased ones (as given by $x$). Namely, they set : $$\tilde y = \mathbb{1}(\tilde u\geqslant \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$$ ... with $\tilde u\sim\mathcal{U}[0,4]$ and $\theta$ a real parameter, arbitrarily set by the authors to be $\theta=\mathbb{E}\tilde x_0=2.5$ [^4].
 
-[^4]: The paper states that $\tilde u\sim\mathcal{U}[0,1]$ but this contradicts the earlier statement that $\tilde x_0$ be truncated on $[1,4]$. In the code, we see that $\mathbb{1}(\tilde u\geqslant x_0)\sim \mathcal{B}(x_0/4)$, which means that in reality $\tilde u\sim\mathcal{U}[0,4]$. Again, this ignores the fact that $\tilde x_0\overset{a.s.}>1$.
+\textbf{In the code: contradiciton regarding U} The paper states that $\tilde u\sim\mathcal{U}[0,1]$ but this contradicts the earlier statement that $\tilde x_0$ be truncated on $[1,4]$. In the code, we see that $\mathbb{1}(\tilde u\geqslant x_0)\sim \mathcal{B}(x_0/4)$, which means that in reality $\tilde u\sim\mathcal{U}[0,4]$. Again, this ignores the fact that $\tilde x_0\overset{a.s.}>1$.
     
-    ```python
-    threshold = mu # mu is the mean of the truncated normal distribution from above
-    Y_Bernoulli_params = non_sensitive_features0 / max_non_sensitive_feature_value
-    Y = [stats.bernoulli(Y_Bernoulli_params[i]).rvs(1) for i in range(len(Y_Bernoulli_params))]
-    Y = Y * ((non_sensitive_features + sensitive_features >= threshold)*1)
-    ```
+```python
+threshold = mu # mu is the mean of the truncated normal distribution from above
+Y_Bernoulli_params = non_sensitive_features0 / max_non_sensitive_feature_value
+Y = [stats.bernoulli(Y_Bernoulli_params[i]).rvs(1) for i in range(len(Y_Bernoulli_params))]
+Y = Y * ((non_sensitive_features + sensitive_features >= threshold)*1)
+```
     
 Note that the exemple falls in the **Oblivious** case, that is that $Y|X$ is not independent from $S$. Indeed, the minority group is disavantdged twice in the process:
 
@@ -220,6 +256,7 @@ The authors insist on the difficulty of estimating how well a fair procedure wor
 
 > \[in our experiment\], we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
 
+---
 
 # Source (paper)
 
