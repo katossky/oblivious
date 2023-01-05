@@ -3,3 +3,7 @@
 .RData
 .Ruserdata
 .DS_Store
+oblivious.pdf
+oblivious.html
+oblivious_files/*
+oblivious.Rproj
