@@ -25,13 +25,6 @@ Arthur
 - Transition p4/p5 (le gros du boulot)
 - Encadré kernel metods
 
-
-Léo
-
-- Intro + annonce de plan
-- Améliorer partie generating oblivious features
-- Compléter exemple
-
 A la fin
 
 - Relecture notations (attention aux 2 produits scalaires)
@@ -47,9 +40,21 @@ léo: est-ce qu'on rajoute une petite note pour expliquer notre changement de no
 
 In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathbb{X}\times\mathbb{X}\to\mathbb{R}$ is called the _kernel_, $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_ and $\langle\cdot,\cdot\big\rangle$ is a inner product defined on $\mathcal{H}$.
 
-In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$. **Parler du fait qu'on a pas besoin de calculer Z explicitement mais juste la matrice O**
+In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$. Because the authors are only interested in kernel methods, it  only necessary to compute $\mathcal{O}$, the oblivious kernel matrix:  $\mathcal{O}_{ij} = \big\langle z_i,z_j \big\rangle$. It will never be necessary to explicitly compute $z=\phi(x)$. 
 
-The article being very technical and very thorough, we here propose a simplified version for the interested reader, with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article. The following report is organised in two sections, where we first introduce the theoretical background and then explore an application to binary classification with support vector machines.
+
+The article being very technical and very thorough, we here propose a simplified version for the interested reader; please refer to the original article for more information. The following report is organised in three sections. We first introduce the theoretical background, then explain how to generate oblivious feature and compute the oblivious kernel matrix and finally present as exemple the application of the method to binary clasificaiton. 
+
+
+::: {.callout-note}
+
+**Léo plus nécessaire à mon avis **
+
+
+with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article. 
+
+:::
+
 
 ## Background
 
@@ -151,71 +156,85 @@ $$Z = \phi(X) - E[\phi(X)|S] + E[\phi(X)]$$
 
 ## Generating oblivious features 
 
-### Two cases
+### High-level view
 
-Because the article focuses on kernel methods, the values of $\mathbf{z}$ never need to be computed, only their scalar products are required. The equation defining the oblivious features involves expectations and conditional expectations, that must be estimated from the data. The authors propose to split a dataset of length 2n in two sets of length n. The first half of the data is used to estimate these expectations using a plug-in approach while the second half can be used to compute a predictor. 
+Because the article focuses on kernel methods, the values of $\mathbf{z}$ never need to be computed, only their scalar products are required. The equation defining the oblivious features involves expectations and conditional expectations, that must be estimated from the data. The authors therefore propose to split a dataset of length 2n in two sets of length n. The first half of the data is used to estimate these expectations using a plug-in approach while the second half can be used to compute a predictor $g$.
 
-The authors distinguish two cases based on the dependency structure between $x$, $s$ and $y$.
+In the most general case, called "Oblivious" by the authors, $y$ is affected by $s$ through $x$ but also through other means (this will be clearer in the exemple of binary classification). Therefore, $(y \mid x)$ is not independent from $s$. In this context, the first step is the computation an oblivious matrix $\mathcal{O}$. This oblivious matrix can then be passed to a kernel method (such as SVM) to create a predictor $g$.
 
-**On se place dans le cas 2 oblivious qui est plus général, l'expliquer. Faire une petite note concernant le cas 1 M-oblivious.**
+When a prediction for a new point $x_{new}$ is required, $x_{new}$ is first transformed into $\mathbf{z}_{new}$ and the prediction has the form $\langle g, \mathbf{z_{new}} \rangle$. Again, $\mathbf{z}_{new}$ does not need to be computed explicitly for this new data point, because the prediction takes the form of a scalar product. 
 
-- **Case 1 (M-Oblivious)**. This is the case where $y|x$ is independent from $s$. The authors use the letter "M" because this resembles a Markovian setting in the sens that we have: $s \rightarrow x \rightarrow y$. In this case, a kernel is estimated from the second half of the data and then used to produce a predictor $g$, but the prediction on the new data point is done after transforming $x$ into $\mathbf{z}$. Still, $\mathbf{z}$ does not need to be computed explicitly for this new data point, because the prediction has the form $\langle g, \mathbf{z} \rangle$ \textbf{Arthur: toujours pas entièrement clair pour moi}
-- **Case 2 Oblivious**. When $s$ can affect the label $y$ not only through $x$ but also through other means, the authors propose to compute an oblivious kernel matrix (denoted $\mathcal{O}$). Then this oblivious matrix can be used to create a predictor $g$, and the prediction for a new data point is done as in case 1.
+:::{.callout-note}    
+The authors mention another case, deemed "M-Oblivious", where $s$ affects $y$ only through $x$. This setup resembles markov chains, because $s \rightarrow x \rightarrow y$ and so $y|x \perp s$. In this case, the kernel matrix can be estimated on the second half of the original data (without transformation into $\mathbf{z}$). Still, the prediction is done after transforming $x_{new}$ in $\mathbf{z}_{new}$
+::: 
+
+
 
 ### Computing the oblivious matrix
 
-**ATTENTION erreur de notation: la premirère équation devarit être $\mathbf{z}_i = \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x)$. Corriger tout ca dans cette partie**
-
-The oblivious kernel matrix $\mathcal{O}$ is a n by n matrix containing the scalar products of the $\mathbf{z}$'s ($\mathcal{O}_{ij} = \langle \mathbf{z}_i, \mathbf{z}_j\rangle$). Computing this matrix boils down to computing $\langle \mathbf{z}_i, \mathbf{z}_j\rangle, \forall i, j$. Because of @eq-boldz, have: $\mathbf{z}_i = \varphi(x_i) - \mathbb{E}\big[\varphi(x_i)\mid s_i\big] + \mathbb{E}\varphi(x_i)$
+The oblivious kernel matrix $\mathcal{O}$ is a n by n matrix containing the scalar products of the $\mathbf{z}$'s ($\mathcal{O}_{ij} = \langle \mathbf{z}_i, \mathbf{z}_j\rangle$). Computing this matrix boils down to computing $\langle \mathbf{z}_i, \mathbf{z}_j\rangle, \forall i, j$. Because of @eq-boldz, have: $\mathbf{z}_i = \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x)$
 So, the scalar product that we want to estimate is: 
-$$\langle \varphi(x_i) - \mathbb{E}\big[\varphi(x_i)\mid s_i\big] + \mathbb{E}\varphi(x_i), \quad \varphi(x_j) - \mathbb{E}\big[\varphi(x_j)\mid s_j\big] + \mathbb{E}\varphi(x_j) \rangle$$
-As mentioned above, the true expectations are replaced by empirical averages, yielding a computation of the scalar product as:
+$$\langle \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x), \quad \varphi(x_j) - \mathbb{E}\big[\varphi(x)\mid s_j\big] + \mathbb{E}\varphi(x) \rangle$$
+As mentioned above, the true expectations are replaced by empirical averages and the conditional expectations are replaced by conditional empirical averages, yielding a computation of the scalar product as:
 $$\mathcal{O}_{ij} = \langle \varphi(x_i) - \hat{\mathbb{E}}_n\big[\varphi(x_i)\mid s_i\big] + \hat{\mathbb{E}}_n\varphi(x_i), \quad \varphi(x_j) - \hat{\mathbb{E}}_n\big[\varphi(x_j)\mid s_j\big] + \hat{\mathbb{E}}_n\varphi(x_j) \rangle$${#eq-scalprod}
 
-Using the properties of the scalar product, @eq-scalprod can be decomposed in nine terms: $\langle \varphi(x_i), \varphi(x_j)\rangle, \quad -\langle \varphi(x_i),\hat{\mathbb{E}}_n[\phi(x_j)|s_j]\rangle, \quad ...$. **C'est la 3ème la fois qu'on le dit, le changer d'une manière ou d'une autre **The expectations are replaced by empirical averages, and the conditional ones are remplaced by empirical averages involving indicator functions (recall that the empirical averages are computed on the first half of the data). For any event $S\in\mathcal{S}$ with strictly positive probability, a simple conditional expectation can be approached by the following empirical average (we use $\tilde{}$ to emphasise random variables) :
+Using the properties of the scalar product, @eq-scalprod can be decomposed in nine terms: $\langle \varphi(x_i), \varphi(x_j)\rangle, \quad -\langle \varphi(x_i),\hat{\mathbb{E}}_n[\phi(x)|s_j]\rangle, \quad ...$, all of which need to be computed. 
+
+Note that for any event $S\in\mathcal{S}$ with strictly positive probability, a simple conditional expectation can be approached by the following empirical average (we use $\tilde{}$ to emphasise random variables) :
 $$\hat{\mathbb{E}}_n(\varphi(\tilde x)|\tilde s \in S) = \frac{\sum_{i=1}^{n}\varphi(x_i) \times \mathbb{1}(s_i \in S)}{\sum_{i=1}^{n} \mathbb{1}(s_i \in S)}$$
 The computation of each of the nine terms boils down to sums involving the kernel. In the article, appendix E1 details (some) the decompositions of the terms into kernel evaluation. As an example:
-$$\langle \varphi(x_i), \hat{\mathbb{E}}_n(\varphi(x_j) | \tilde s \in S_j )\rangle = \frac{\sum_{l=1}^n k(x_i, x_l) \times \mathbb{1}(s_l \in S_j)}{\sum_{l=1}^n \mathbb{1}(s_l \in S_j)}$$
+$$\langle \varphi(x_i), \hat{\mathbb{E}}_n(\varphi(x) | \tilde s \in S_j )\rangle = \frac{\sum_{l=1}^n k(x_i, x_l) \times \mathbb{1}(s_l \in S_j)}{\sum_{l=1}^n \mathbb{1}(s_l \in S_j)}$$
 
-**Rajouter un lien logique avec la partie d'avant (et conclure sur le fait qu'on a pas à évaluer phi, parce que phi peut être infini)** It also provides a generic algorithm to compute the oblivious matrix, for a kernel $k(.,.)$ to be chosen. \textbf{[Arthur: note that the very computation is not trivial for continuous $s$ since we have to partition the range into chunks of non-zero probability; attention en pratique, y a pas mal de cas où si S est un peu bizarre ce sera compliqué. Faire 2 phrases là-dessus]}
+At this point, we see that each scalar product of the oblivious matrix can be estimated by empirical averages of different sorts that involve calls to the kernel $k(.,.)$ but no explicit computation of $\mathbf{z_i}$. This is very nice, because $\varphi(.)$ is potentially non-finite. The appendix E1 also presents an algorithm aggregating all of these computations so as to produce the oblivious kernel matrix $\mathcal{O}$ for a kernel $k(.,.)$ to be chosen. 
+
+Note that depending on the nature of s, the computation can be more or less trivial. If the sensitive attribute $s$ is binary, there should not be any issue. If it is continuous, then it is necessary to partition the range into chunks of non-zero probability and one could run into issues if one of those chunks is associated with few data points. 
+
 
 ## Application to binary classification 
 
-**Enlever la référence au cas oblivious**
-
 In this section, we present an example of the application of the method to the binary classification. We refer both to the text of the article and to the code in their implementation \footnote{https://github.com/azalk/Oblivious}. Some of the claims made in the paper, especially about the value of parameters, are contradicted by the implementation. In such case, we will refer to what we found in the implementation. 
 
-The application is based on synthetic data. In an imaginary scenario, students receive a grade and are supposed to validate if this grade exceed an arbitrarily chosen threshold $\theta$. the students are discriminated according to some (binary) sensitive feature: $\tilde s\sim B(0.5)$ \footnote{In the implementation, half of the synthetic data has $s= 1$ and the other half $s=0$, deterministically}. We refer to the students with $s=0$ as the _minority group_ and to the other students as the _advantaged group_.
+The application is based on synthetic data. In an imaginary scenario, students receive a grade and are supposed to validate if this grade exceed an arbitrarily chosen threshold $\theta$. the students are discriminated according to some (binary) sensitive feature: $\tilde s\sim B(0.5)$ \footnote{In the implementation, half of the synthetic data has $s= 1$ and the other half $s=0$, deterministically.}. We refer to the students with $s=0$ as the _minority group_ and to the other students as the _advantaged group_.
 
 The original grade is denoted $\tilde x_0$ and it follows a Gaussian truncated between 1 and 4. Then, the grades are biased towards the advantaged group, which the authors model as:
 $$\tilde x\overset{\Delta}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$
 ... where $\tilde b\sim B(0.9)$, a Bernoulli random variable, is the 1-unit bias for group $s=1$ or against group $s=0$. So, most students in the advantaged group will have $\tilde x > \tilde x_0$ and most students in the minority group will have $\tilde x < \tilde x_0$.
 
-The decision whether a student should pass is denoted by the letter $y$. A fair rule should be to fix a threshold $\theta$ and have:
-$$y^* \overset{\Delta}= \mathbb{1}(\tilde x_0 > \theta)$$
+The decision whether a student should pass is denoted by the letter $y$. Given a threshold $\theta$, a fair rule should be:
+$$y^* \overset{\Delta}= \mathbb{1}(\tilde x_0 \geqslant \theta)$$
 Instead, the unfair decision from the article is a mix of the student true ability (as given by $x_0$) and the biased one (as given by $x$):
 $$\tilde y \overset{\Delta}= \mathbb{1}(\tilde u\leqslant \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$$
 
-... with $\tilde u \sim \mathcal{U}(1,4)$, or equivalently, $\mathbb{1}(\tilde u\leqslant x_0) \sim \mathcal{B}(x_0/4)$ for a known $x_0$\footnote{Actually, the article writes $\tilde y \overset{\Delta}= \mathbb{1}(\tilde u {\color{red}\geqslant} \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$ but this writing makes little sense and seems to contradict their implementation. To us, it makes much more sense that the greater your initial grade is, the more likely you are to pass, and therefore to check the condition $\tilde u\geqslant \tilde x_0$ instead of $\tilde u\leqslant \tilde x_0$.}.
+... with $\tilde u \sim \mathcal{U}(1,4)$, or equivalently, $\mathbb{1}(\tilde u\leqslant x_0) \sim \mathcal{B}(x_0/4)$ for a known $x_0$\footnote{Actually, the article writes $\tilde y \overset{\Delta}= \mathbb{1}(\tilde u {\color{red}\geqslant} \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$ but this writing makes little sense and seems to contradict their implementation. To us, it makes much more sense that the greater your initial grade is, the more likely you are to pass, and therefore to check the condition $\tilde u\leqslant \tilde x_0$ instead of $\tilde u\geqslant \tilde x_0$.}.
 
-The example may seem contrived, but it is intentional from the authors' part. Observe that $\tilde {y}|\tilde{x}\,\cancel{\perp\!\!\!\perp}\,\tilde{s}$ and that this example thus falls in the \textbf{oblivious case}. Indeed, the minority group is disadvantaged twice in the process: (i) their grade $\tilde x$ can be diminished, (ii) as compared to the other group, their grade is compared to a higher threshold $\theta - \tilde s$, because $\tilde s = 1$ for the advantaged group. 
+The example may seem contrived, but it illustrates a case where $y$ is affected by $s$ both through $x$ and directly. Observe that $\tilde {y}|\tilde{x}\,\cancel{\perp\!\!\!\perp}\,\tilde{s}$. Indeed, the minority group is disadvantaged twice in the process: (i) their grade $\tilde x$ can be diminished (influence through $x$), (ii) as compared to the other group, their grade is compared to a higher threshold $\theta - \tilde s$, because $\tilde s = 1$ for the advantaged group (direct influence).
 
+In this setup, the authors fit to the data: (i) a linear SVM, so the kernel is simply the linear kernel $k(x_i, x_j) = x_i \cdot x_j$, (ii) an oblivious SVM, so the linear kernel is still used, but is applied to $\mathbf{z} = \varphi(x)$. Then, they compare those two methods in terms of binary classification error.
 
-The authors also raise an important question: how should you evaluate a fair procedure ? Comparing the predictions to the real labels is not a good option because, by definition, the real labels are _biased_. In this synthetic case, the authors can compare their prediction with the "true", fair label, but it most of the time not possible in real life settings. They write:
+At this point, they raise an important question: how should you evaluate a fair procedure ? Comparing the predicted labels to the observed labels is not a good option because, by definition, the observed labels are _biased_. In this toy example, the authors have at their disposal the _fair_ labels (as defined by $y^*$), but this is not the case in most practical settings. The authors write:
 
 > \[in our experiment\], we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
 
-**Finir cette section**
-- Linear SVM
-- Oblivious SVM (préciser le kernel)
+In their application, the authors show that altough the misclassification error mesured with the real labels is higher using oblivious SVM, it is lower when the error is measured using the fair labels. 
 
-Conclure avec leur résultat empirique, ie que le oblivious SVM garantit une quasi indépendance // linear SVM au prix d'une légère augmentation de l'erreur de classification. Préciser l'histoire de l'erreur de classification. 
+**Léo: je ne suis pas certain des notations(pour s, parce que dans l'article ils marquent S =s) dans l'équation suivante, ni même de son utilisé.**
+Finally, the authors measure the dependancy between the predictions of the algorithm and the sensitive feautre $s$ usinga measure  $\tilde \beta$ that writes:
+$$\tilde \beta(\hat y, s) \overset{\Delta}= \frac{1}{2} \sum_{s \in \{0,1\}} \sum_{y \in \{0,1\}} \mathbb{E} \lvert \mathbb{P}(\hat y = y, \tilde s = s \vert \mathcal{F}_n) - \mathbb{P}(\hat y = y\vert \mathcal{F}_n) \mathbb{P}(\tilde s = s)\rvert $$
+where $\mathcal{F}_n$ is the $\sigma$-algebra generated by the training set. Intuitively, $\tilde \beta$ shoud le be small if $\hat y$ and $s$ are close to be independent. The authors compute the empirical counterpart of $\tilde \beta$ They show that it is close to 0 for the oblivious SVM, whereas $\tilde \beta \geqslant 0.8$ for the linear SVM.
+
+In this example, the method proposed by the authors allows to reach something close to independence between the sensitive attributes and the prediction of the algorithms. The misclassification error of the algorithm is higher than a typical linear SVM if the labels used for the evaluation are the observed ones, but lower if the _fair_ labels are used. 
+
+
+
+
+
 
 
 
 --- 
 
 **Fais comme tu veux arthur**
+
 ::: {.callout-note}
 
 Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
