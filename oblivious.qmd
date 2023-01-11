@@ -4,6 +4,8 @@ author: "Arthur Katossky & Léo Houairi"
 bibliography: bibliography.bib
 format:
   pdf:
+    toc: true
+    toc-depth: 3
     include-in-header:
       text: \usepackage{cancel}
 
@@ -12,53 +14,17 @@ format:
 # citation-location: margin
 ---
 
-| Student   | Time     |
-|----|-------|
-| Léo   |     12h00 |
-| Arthur   |     12h00 |
+## Introduction
 
-**TO DO**
+In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information: $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathbb{X}\times\mathbb{X}\to\mathbb{R}$ is called the _kernel_, $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_ and $\langle\cdot,\cdot\big\rangle$ is an inner product defined on $\mathcal{H}$.
 
-Arthur
-
-- Notations
-- Transition p4/p5 (le gros du boulot)
-- Encadré kernel metods
-
-A la fin
-
-- Relecture notations (attention aux 2 produits scalaires)
-
-\tableofcontents
-\newpage 
-
-::: {.callout-note}
-
-léo: est-ce qu'on rajoute une petite note pour expliquer notre changement de notation par rapport à l'article (les x et z au lieu d'avoir des X et des Z partout). Et les tildes pour la partie sur la classification binaire, qui j'imagine servent à différencier de leurs contreparties empiriques
-
-:::
-
-In "Oblivious data for fairness with kernels" [@2021-oblivious], Steffen Grünewälder and Azadeh Khaleghi consider the prediction of an outcome $y$ from nonsensitive information $x$ where there exists some sensitive information $s$ that may be correlated with $x$. Dependence between $x$ and $s$ is a fairness issue if one wants to guarantee that predictions be independent from sensitive information: $y\perp\!\!\!\perp s$. The authors restrict their discussion to kernel-based learning, that is the broad class of learning algorithms that, instead of relying directly on the sample $(x_1...x_n)$, may be expressed so as to rely only on a $n\times n$ positive semi-definite matrix $K_n$ summarizing the dependence between the observations where $K_{ij}=k(x_i,x_j)=\big\langle\varphi(x_i),\varphi(x_j)\big\rangle$ with $k:\mathbb{X}\times\mathbb{X}\to\mathbb{R}$ is called the _kernel_, $\varphi:\mathbb{X}\to\mathcal{H}$ is the associated _feature map_ and $\langle\cdot,\cdot\big\rangle$ is a inner product defined on $\mathcal{H}$.
-
-In this context, they devise how to construct "oblivious" features $z=\phi(x)$ that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. Such features may be released and used for prediction, without sharing any confidential data. After showing that a strict respect of both criteria is infeasible, they provide relaxed constraints and approximate solutions. The $z$ features so constructed are to be used in the construction of the kernel matrix in place of $x$. Because the authors are only interested in kernel methods, it  is only necessary to compute $\mathcal{O}$, the oblivious kernel matrix:  $\mathcal{O}_{ij} = \big\langle z_i,z_j \big\rangle$. It will never be necessary to explicitly compute $z=\phi(x)$. 
-
+In this context, they devise how to construct "oblivious" features $z=f(x,s)$ (for some decorrelation function $f$) that both (a) guarantee the independence requirement $z \perp\!\!\!\perp s$ and (b) retain the information contained in $x$, in some maximal sense. These $z$ features are to be used in the construction of the kernel matrix in place of $x$ and yet, they  may be released and used for prediction, without sharing any confidential data! Because the authors are only interested in kernel methods, it is only necessary to compute $O_n=\big(\langle \varphi(z_i),\varphi(z_j)\rangle\big)_{i,j=1..n}$. It will never be necessary to explicitly compute $\mathbf{z}=\varphi(z)=\varphi(f(x,s))$. After showing that a strict respect of both criteria (a) and (b) is infeasible, they provide relaxed constraints and approximate solutions.
 
 The article being very technical and very thorough, we here propose a simplified version for the interested reader; please refer to the original article for more information. The following report is organised in three sections. We first introduce the theoretical background, then explain how to generate oblivious feature and compute the oblivious kernel matrix and finally present as exemple the application of the method to binary classification. 
 
-
-::: {.callout-note}
-
-**Léo plus nécessaire à mon avis **
-
-
-with just enough to understand their application to binary classification (section 7.1). If you are familiar with (and not afraid by) [Reproducing Kernel Hilbert Spaces](https://en.wikipedia.org/wiki/Reproducing_kernel_Hilbert_space), [$P$-Donsker classes](https://fr.wikipedia.org/wiki/Classe_de_Donsker) or [Bochner-measurability](https://en.wikipedia.org/wiki/Bochner_measurable_function), please refer to the original article. 
-
-:::
-
-
 ## Background
 
-Let's suppose we have at our disposal data $(x_n,s_n,y_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. We want to provide a way to train a kernel-based model $f:\mathbb{X}\to\mathbb{Y}$ on $(x_n,y_n)$ where $s\perp\!\!\!\perp \hat y\equiv f(x)$ but we do not want our method to be dependent on which specific model $f$ we use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(z_n,y_n)$ instead.
+Let's suppose we have at our disposal data $(x_n,s_n,y_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. We want to provide a way to train a kernel-based model $g:\mathbb{X}\to\mathbb{Y}$ on $(x_n,y_n)$ where $s\perp\!\!\!\perp \hat y\equiv g(x)$ but we do not want our method to be dependent on which specific model $f$ we use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(z_n,y_n)$ instead.
 
 The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
@@ -76,25 +42,20 @@ The question are : why can't we guarantee strict independence? Do we loose anyth
 
 ## Mathematical setup and notations
 
-We consider a probability space $(\Omega, \mathcal{A}, \mathbb{P})$ and a measurable space $(\mathbb{X}, \mathcal{X})$ (resp. $(\mathbb{S},\mathcal{S})$) in which the random variables $x$ and $z$ (resp. $s$) take their values.
+We consider a probability space $(\Omega, \mathcal{A}, \mathbb{P})$ and a measurable space $(\mathbb{X}, \mathcal{X})$ (resp. $(\mathbb{S},\mathcal{S})$) in which the random variables $x$ and $z$ (resp. $s$) take their values. $x$ is an observed variable. $s$ is some sensitive information. $z$ a public release of $x$ that ideally should not depend on $s$. When needed, we highlight by a $\tilde{}$ the random variables, in order to distinguish them from their realisations. Thus, formally, $x\in\mathbb{X}$ but $\tilde x\in\mathbb{X}^\Omega$.
 
-For $a,b\in\mathbb{R}^d$, we note $a \cdot b = a^\top b$ the standard dot product.
+We note $\mathcal{H}$ the reproducing kernel Hilbert space (RKHS) composed of functions $h:\mathbb{X} \rightarrow \mathbb{H}$ where $\mathbb{H}\overset{\Delta}=\mathbb{R}^d$, while $\phi(x): X \rightarrow \mathcal{H}$ is its feature map and $k(\cdot,\cdot)$ its associated kernel. We note $a \cdot b , \forall (a,b) \in \mathbb{H}^2$ the standard dot product and $\langle h_1,h_2 \rangle, \forall (h_1,h_2)\in\mathcal{H}^2$ the RKHS inner product. We use bold font in $\mathbf{x}$ and $\mathbf{z}$ for the representations of $x$ and $z$ in the feature space $\mathcal{H}$.
 
-:::
+In a RKHS, we have both:
 
+- $k(a,b)=\langle \varphi(a),\varphi(b) \rangle=\langle \varphi(b),\varphi(a) \rangle$
+- $\forall h\in\mathcal{H},\forall x\in\mathbb{X}:  h(x)=\langle h,\varphi(x) \rangle$
 
-::: {.callout-note}
+For instance, the **linear kernel** is such that $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $h_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$, endowed with the scalar product $\langle h_\mathbf{u},h_\mathbf{v}\rangle=\mathbf{u}\cdot \mathbf{v}$. Noting that $f_\mathbf{w}=k(␣,\mathbf{w})$ and that $f_\mathbf{w}(x)=k(x,\mathbf{w})$, we can verify the reproducing property: $\forall h \in\mathcal{H}: \langle h ,k(␣,x)\rangle=h(x)$.
 
-## Kernel methods
+Contrary to the article, we do not consider specific notations for the randomness of reproducing kernel Hilbert space.
 
-**Arthur complète**
-
-Then, we consider $\mathcal{H}$ the reproducing kernel hilbert spaces composed of functions $h:\mathbb{X} \rightarrow \mathbb{R}$, its feature map being $\phi(x): X \rightarrow \mathcal{H}$. Finally, we consider the $\mathcal{L}^2$ space of functions attaining values in $\mathbb{H}$ (which is itself a space composed of functions). 
-
-Kernels and RKHSs considered in the articles are:
-
-- The **linear kernel** $\forall (a,b) \in\mathbb{R}^d: k(a,b)=a\cdot b$. The feature map is $\varphi(x)=x$. The RKHS $\mathcal{H}$ is the set of all functions $h_\mathbf{w}:x\mapsto x \cdot \mathbf{w}$ for $\mathbf{w}\in\mathbb{R}^d$, endowed with the scalar product $\langle h_\mathbf{u},h_\mathbf{v}\rangle=\mathbf{u}\cdot \mathbf{v}$. Noting that $f_\mathbf{w}=k(␣,\mathbf{w})$ and that $f_\mathbf{w}(x)=k(x,\mathbf{w})$, we can verify the reproducing property: $\forall h \in\mathcal{H}: \langle h ,k(␣,x)\rangle=h(x)$.
-
+We write data as $(y_i,x_i)_{i=1..n}$ though we never consider any $y_i$ explicitly. We write $g$ any predictor using kernel methods, belonging to a class $\mathcal{G}$. The "best" $g^\star$ is estimated on a sample, but its dependence on $(x_i)_{i=1..n}$ can completely be expressed by the kernel matrix $K_n=(k(x_i,x_j))_{i,j=1..n}$. In the article, this kernel matrix will be replaced by its oblivious counterpart $O_n$ or — when we realise that this is infeasible — an approximation $\mathcal{O}_n$. We note $\hat y=g^\star(x)$.
 :::
 
 ### Independence is too strong a requirement
@@ -111,7 +72,7 @@ Following the authors, we thus move from the strict independence assumption to t
 
 ### No-correlation between $z$ and $s$ is an excessive restriction
 
-Decorrelation together with square-error minimisation is a well-known problem, whose solution is the residual of the projection of $x$ onto $s$ (where projection is defined from the vector product $\langle a,b\rangle=\mathbb{E}[ab]$) : 
+Decorrelation together with square-error minimisation is a well-known problem, whose solution is the residual of the projection of $x$ onto $s$ : 
 $$z=x-\mathbb{E}\big(x\mid s\big) +\mathbb{E}x$$
 
 However there are at least two reasons for not liking this solution:
@@ -119,78 +80,67 @@ However there are at least two reasons for not liking this solution:
 1. Covariance is a bilinear operator. This is nice because we can take advantage of linearity in computation. But the price to pay is that all non-linear dependencies will be missed. 
 2. More fundamentally, we need the $L^2$ norm to have a sense on $\mathcal{X}$, which may not be the case for many objects on which kernel-methods are defined.
 
-For both reasons, we may want to move away from defining $z$ in the $\mathbb{X}$ space, and rather define $\mathbf{z}$ in the $\mathcal{H}$ space where the feature map $\varphi(x)$ lives. This helps on both sides as not only can covariance in an infinite feature space capture subtle forms of dependence that the linear case could not but we only have to define a distance on  $\varphi(x)$, which is easy since $\varphi(x)$ is a $\mathbb{R}^d$-valued function. \textbf{Vérifier que nous sommes cohérent sur les notations avec } $\mathcal{H}$ \textbf{ J'ai l'impression que parfois c'est l'ensemble des fonctions $\varphi$ parfois c'est l'espace où $\varphi$ prend valeur.}
+For both reasons, we may want to move away from defining $z$ in the $\mathbb{X}$ space, and rather define $\mathbf{z}$ in the $\mathcal{H}$ space where the feature map $\varphi(x)$ lives.
 
-### Relaxation
+### Framing shift
 
-**A reformuler pour que ca colle avec le début jusqu'au début de "Generating oblivious features"**
+We used to have $\mathbf{z}=\varphi(z)=\varphi(f(x,s))$ where $f:\mathbb{X}\times \mathbb{S}\to\mathbb{X}$ is some decorrelation function. Since this problem is unsolvable, we now want a new decorrelation function $f':\mathcal{H}\times \mathbb{S}\to \mathcal{H}$ and directly pick $\mathbf{z}=f'(\mathbf{x},s)=f'(\varphi(x),s)$.
 
-we should just replace z by phi(z) but instead, we use boldz. More flexibility as boldz need not have any corresponding preimage by phi. phi(calz) is a manyfold that is contained into the Z space.
+This helps on both sides as not only can covariance in the (potentially infinite) feature space $\mathcal{H}\subseteq (\mathbb{R}^d)^{\mathbb{X}}$ capture subtle forms of dependence that the linear case could not, but we only have to define distances on $\mathcal{H}$, which is easy since $\varphi(x)\in\mathcal{H}$ is an $\mathbb{R}^d$-valued function.
 
-### Problem formulation and relaxations
+However, this is an important departure from the initial problem. Specifically, we have no guarantee whatsoever that $\mathbf{z}=f'(\mathbf{x},s)$ has a pre-image through $\varphi$, meaning that we may end up with a decorrelated $\mathbf{z}\in\mathcal{H}$ that does not correspond to any actual $z\in\mathbb{X}$. Authors call $\mathcal{M}=\varphi(\mathbb{X})\subseteq\mathcal{H}$ the manifold that contains all image of elements $x\in\mathbb{X}$ through $\varphi$. They show that if $\mathbf{z}$ is close to the manifold $\mathcal{M}$, it can be meaningfully **projected** onto the manifold. After carefully defining a distance to $\mathcal{M}$, they prove that there exists a $z \in \mathbb{X}$ that attains this minimal value (proposition 1).
 
-At the begining, the problem considered is the construction of a random variable $Z: \Omega \rightarrow \mathbb{X}$ that is independant of $S$ and closer to $X$ than all other random variables respecting the independeance criterion. 
+### Alternative independence definition
 
-Then, the authors choose to do a first relaxation of the independance criterion. Instead of considering the independance as a criterion, they focus of the interactions of the random variables considered with functions (je paraphrase là). The independance criterion becomes that, $\forall h \in H, \quad \forall g \in L2$
+But now how to define the independence requirement for $\mathbf{z}\in\mathcal{H}$? Indeed, that's from an independence definition that we obtained $f$ in the first place ! The authors proceed step by step, starting with the premise that independence can be defined in term of independence: $$\begin{aligned}
+\tilde z\perp\!\!\!\perp \tilde s \iff \\
+\forall h_1 \in (\mathbb{R}^d)^{\mathbb{X}}, \; \forall h_2 \in (\mathbb{R}^d)^{\mathbb{S}} : \\
+\mathbb{E}[h_1(\tilde z)\cdot h_2(\tilde s)]=\mathbb{E}[h_1(\tilde z)]\cdot \mathbb{E}[h_2(\tilde s)]
+\end{aligned}$$
 
-$$E[h(Z)\times g(S)] = E[h(Z)] \times E[g(s)] $$
-Because of the most important property of the RKHS, this condition can be rewritten, again $\forall h \in H, \quad \forall g \in L2$
-$$E[\langle h, \phi(Z)\rangle \times g(S)] = E[ \langle h, \phi(Z)\rangle] \times E[g(s)] $$
-This is interesting, because $\phi(Z)$ leaves in the space H but **does not cover all the space**. Indeed, if $\phi$ is continuous, $\phi(Z)$ is a low-dimensional manifold denoted $\mathcal{M}$ thereafter. 
-Then, the authors chose to introduce a new relaxation. Instead of considering $\phi(Z)$, they replace it by a random variable $\mathbf{Z}: \Omega \rightarrow \mathbb{H}$. So, we move from the "two-steps" where we had $Z: \Omega \rightarrow \mathbb{X}$ and then $\phi(Z): \mathbb{X} \rightarrow \mathbb{H}$ to going directly from $\Omega$ to $\mathbb{H}$. 
+The thing is that for any $h\in\mathcal{H}\subseteq (\mathbb{R}^d)^{\mathbb{X}}$, the reproducing property $h(z)=\langle h,\varphi(z)\rangle$ holds. Thus, the former expression can be amended as^[We here show that the former expression (valid for $h_1 \in (\mathbb{R}^d)^{\mathbb{X}}$) implies the latter (valid only for $h_1 \in \mathcal{H}\subseteq (\mathbb{R}^d)^{\mathbb{X}}$). The equivalence seems plausible but we do not venture in a proof.]:$$\forall h_1 \in \mathcal{H}, \forall h_2 \in (\mathbb{R}^d)^{\mathbb{S}} :  \mathbb{E}[\langle h_1,\varphi(\tilde z)\rangle \cdot h_2(\tilde s)]=\mathbb{E}[\langle h_1,\varphi(\tilde z)\rangle] \cdot \mathbb{E}[h_2(\tilde s)]$$
 
-After this relaxation, the authors defined the notion of $\mathbb{H}$**-Independence**. $\mathbf{Z}$ and $S$ are said $\mathbb{H}$-independent iff $h \in \mathbb{H}$ and all bounded measurable $g: \mathbb{S} \rightarrow \mathbb{R}$, we have: 
-$$E[\langle h, \mathbf{Z}\rangle \times g(S)] = E[ \langle h, \mathbf{Z}\rangle] \times E[g(s)] $$
-This criterion is very close to the precedent one, except that again, we go directly to $\mathbb{H}$. 
+After noting that $\varphi(z)$ does not cover the full space $\mathcal{H}$ but on the contrary is restricted to $\mathcal{M}=\varphi(\mathbb{X})$, the last step is to authorise for any value outside of $\mathcal{M}$. This independence criterion is called $\mathbb{H}$-independence by the authors : $$\forall h_1 \in \mathcal{H}, \forall h_2 \in (\mathbb{R}^d)^{\mathbb{S}} :  \mathbb{E}[\langle h_1,\tilde{\mathbf{z}}\rangle  \cdot h_2(\tilde s)]=\mathbb{E}[\langle h_1,\tilde{\mathbf{z}}\rangle] \cdot \mathbb{E}[h_2(\tilde s)]$$
 
-The problems becomes finding a $\mathbf{Z}$ that is $\mathbb{H}$-independent from S and as close as possible to $\phi(X)$ (in the $||\mathbf{Z} - \phi(X)||_2$, even if I am not sure to know what it means). 
+At this step, we have completely moved away from defining the independence in the $\mathbb{X}$ space, to defining it in the feature space $\mathcal{H}$. In this context, the decorrelation problem becomes finding a $\mathbf{z}$ that is $\mathbb{H}$-independent from $s$ and as close as possible to $\phi(x)$, in the sense that $\|\mathbf{z} - \phi(x)\|_2$ is minimal. $\mathbb{H}$-independence is not as stringent as strict independence^[If $\exists z\in\mathbb{X}: \varphi(z)=\mathbf{z}$, $\mathbb{H}$-independence between $\mathbf{z}$ and $s$ implies strict independence between $h_1(\mathbf{z})$ and $s$, with the same notations as in the rest of the section.], and we are likely to find a solution close to $\mathcal{M}$, for which this solution is meaningful. Solving these constraints move us back where we started: $$\mathbf{z}=\varphi(x)-\mathbb{E}[\varphi(x)|s]+\mathbb{E}[\varphi(x)]$$
 
-The crucial point is to remark that if $\mathbf{Z}$ can be written as $\phi(W)$ for some $W$ in $\mathbb{X}$, then it is easy to show that $\mathbb{H}$-independence implies independence between a kernel estimator ($\langle \hat h, \mathbf{Z} \rangle$) and $S$. Of course, nothing guarantees that $\mathbf{Z}$ lies in the image of $\phi$ but, if it is close to this image (ie close to the manifold $\mathcal{M}$), it could be **projected** on the manifold. At the bottom of page 6, the authors are defining a notion of distance of $\mathbf{Z}$ to the manifold. Then, proposition 1 shows that $\exists W \in \mathbb{X}$ that attains this minimal value. 
-
-Section 4 is mostly about estimating empirically the distance from $\mathbf{Z}$ to $\mathcal{M}$ and showing how to bound the approximation. 
-
-In section 5, we are going back to the problem of chosing $\mathbf{Z}$. To do this, we recall the initial formula $Z = X - E[X|S] + E[X]$. But now we are working in the $\mathcal{M}$ space, so it simply becomes:
-$$Z = \phi(X) - E[\phi(X)|S] + E[\phi(X)]$$
-"Such feature is $\mathbb{H}$-independent from $S$. $\mathbf{Z}$ is the best approximation of $\phi(X)$ in the MSE under $\mathbb{H}$-independence. 
-
+The difference is that now, we have theoretical grounding for our initial intuition.
 
 ## Practical computations
 
-### High-level view
+### Overview
 
-Because the article focuses on kernel methods, the values of $\mathbf{z}$ never need to be computed, only their scalar products are required. The equation defining the oblivious features involves expectations and conditional expectations, that must be estimated from the data. The authors therefore propose to split a dataset of length 2n in two sets of length n. The first half of the data is used to estimate these expectations using a plug-in approach while the second half can be used to compute a predictor $g$.
+The equation defining the oblivious features involves expectations and conditional expectations, that must be estimated from the data. But we do not need to compute these exact quantities. Because the article focuses on kernel methods, we are only interested in the $\mathbf{z}$'s scalar products, which together form the oblivious kernel matrix $\mathcal{O}=\big(\langle\mathbf{z}_i,\mathbf{z}_j\rangle\big)_{ij=1..n}$.
 
-In the most general case, called "Oblivious" by the authors, $y$ is affected by $s$ through $x$ but also through other means (this will be clearer in the exemple of binary classification). Therefore, $\tilde {y}|\tilde{x}\,\cancel{\perp\!\!\!\perp}\,\tilde{s}$. In this context, the first step is the computation of an oblivious matrix $\mathcal{O}$. This oblivious matrix can then be passed to a kernel method (such as SVM) to create a predictor $g$.
+In practice, the authors propose a two-step method to build $\mathcal{O}$. They split a dataset of length $2n$ in two sets of length $n$. The first half of the data is used to estimate the expectations using a plug-in approach while the second half is used to compute the kernel matric $\mathcal{O}$. Then, $\mathcal{O}$ can be used to compute any kernel-based predictor $g$^[
+This description corresponds to the most general case, called "Oblivious" by the authors. In this situation, $y$ is affected by $s$ through $x$ but also through other means (this will be clearer in the example of binary classification). Therefore, $\tilde {y}|\tilde{x}\,\cancel{\perp\!\!\!\perp}\,\tilde{s}$.
+The authors mention an other case, deemed "M-Oblivious", where $s$ affects $y$ only through $x$. This set-up resembles markov chains, because $s \rightarrow x \rightarrow y$ and so $y|x \perp s$. In this case, the kernel matrix can be estimated on the second half of the original data (without transformation into $\mathbf{z}$).
+].
 
-When a prediction for a new point $x_{new}$ is required, $x_{new}$ is first transformed into $\mathbf{z}_{new}$ and the prediction has the form $\langle g, \mathbf{z_{new}} \rangle$. Again, $\mathbf{z}_{new}$ does not need to be computed explicitly for this new data point, because the prediction takes the form of a scalar product. 
-
-:::{.callout-note}    
-The authors mention another case, deemed "M-Oblivious", where $s$ affects $y$ only through $x$. This setup resembles markov chains, because $s \rightarrow x \rightarrow y$ and so $y|x \perp s$. In this case, the kernel matrix can be estimated on the second half of the original data (without transformation into $\mathbf{z}$). Still, the prediction is done after transforming $x_{new}$ in $\mathbf{z}_{new}$.
-::: 
-
+<!-- When a prediction for a new point $x_{new}$ is required, $x_{new}$ is first transformed into $\mathbf{z}_{new}$ and the prediction has the form $\langle g, \mathbf{z_{new}} \rangle \simeq g(x_{new})$. Again, $\mathbf{z}_{new}$ does not need to be computed explicitly for this new data point, because the prediction takes the form of a scalar product. -->
 
 
 ### Computing the oblivious matrix
 
-The oblivious kernel matrix $\mathcal{O}$ is a n by n matrix containing the scalar products of the $\mathbf{z}$'s ($\mathcal{O}_{ij} = \langle \mathbf{z}_i, \mathbf{z}_j\rangle$). Computing this matrix boils down to computing $\langle \mathbf{z}_i, \mathbf{z}_j\rangle, \forall i, j$. Because of @eq-boldz, we have: $\mathbf{z}_i = \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x)$
-So, the scalar product that we want to estimate is: 
+Because of @eq-boldz, we have: $\mathbf{z}_i = \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x)$. Thus, computing $\mathcal{O}_{ij}=\langle\mathbf{z}_i,\mathbf{z}_j\rangle$ boils down to estimating : 
 $$\langle \varphi(x_i) - \mathbb{E}\big[\varphi(x)\mid s_i\big] + \mathbb{E}\varphi(x), \quad \varphi(x_j) - \mathbb{E}\big[\varphi(x)\mid s_j\big] + \mathbb{E}\varphi(x) \rangle$$
-As mentioned above, the true expectations are replaced by empirical averages and the conditional expectations are replaced by conditional empirical averages, yielding a computation of the scalar product as:
-$$\mathcal{O}_{ij} = \langle \varphi(x_i) - \hat{\mathbb{E}}_n\big[\varphi(x_i)\mid s_i\big] + \hat{\mathbb{E}}_n\varphi(x_i), \quad \varphi(x_j) - \hat{\mathbb{E}}_n\big[\varphi(x_j)\mid s_j\big] + \hat{\mathbb{E}}_n\varphi(x_j) \rangle$${#eq-scalprod}
+As mentioned above, in the estimation process the true expectations are replaced by empirical averages and the conditional expectations are replaced by conditional empirical averages, yielding an empirical counterpart of the scalar product as:
+$$\left(\hat{\mathcal{O}}_n\right)_{ij} = \langle \varphi(x_i) - \hat{\mathbb{E}}_n\big[\varphi(\tilde x)\mid \tilde s=s_i\big] + \hat{\mathbb{E}}_n\varphi(\tilde x), \quad \varphi(x_j) - \hat{\mathbb{E}}_n\big[\varphi(\tilde x)\mid \tilde s=s_j\big] + \hat{\mathbb{E}}_n\varphi(\tilde x) \rangle$${#eq-scalprod}
 
-Using the properties of the scalar product, @eq-scalprod can be decomposed in nine terms: $\langle \varphi(x_i), \varphi(x_j)\rangle, \quad -\langle \varphi(x_i),\hat{\mathbb{E}}_n[\phi(x)|s_j]\rangle, \quad ...$, all of which need to be computed. 
+Using the properties of the scalar product, @eq-scalprod can be decomposed in nine terms: $\langle \varphi(x_i), \varphi(x_j)\rangle, \quad -\langle \varphi(x_i),\hat{\mathbb{E}}_n[\varphi(\tilde x)|\tilde s = s_j]\rangle, \quad ...$, all of which need to be computed. 
 
 Note that for any event $S\in\mathcal{S}$ with strictly positive probability, a simple conditional expectation can be approached by the following empirical average (we use $\tilde{}$ to emphasise random variables) :
 $$\hat{\mathbb{E}}_n(\varphi(\tilde x)|\tilde s \in S) = \frac{\sum_{i=1}^{n}\varphi(x_i) \times \mathbb{1}(s_i \in S)}{\sum_{i=1}^{n} \mathbb{1}(s_i \in S)}$$
 The computation of each of the nine terms boils down to sums involving the kernel. In the article, appendix E1 details (some) the decompositions of the terms into kernel evaluation. As an example:
 $$\langle \varphi(x_i), \hat{\mathbb{E}}_n(\varphi(x) | \tilde s \in S_j )\rangle = \frac{\sum_{l=1}^n k(x_i, x_l) \times \mathbb{1}(s_l \in S_j)}{\sum_{l=1}^n \mathbb{1}(s_l \in S_j)}$$
 
-At this point, we see that each scalar product in the oblivious matrix can be estimated by empirical averages of different sorts that involve calls to the kernel $k(.,.)$ but no explicit computation of $\mathbf{z}_i$. This is very nice, because $\varphi(.)$ is potentially non-finite. In the article, appendix E1 also presents an algorithm aggregating all of these computations so as to produce the oblivious kernel matrix $\mathcal{O}$ for a kernel $k(.,.)$ to be chosen. 
+At this point, we see that each scalar product in the oblivious matrix can be estimated by empirical averages of different sorts that involve calls to the kernel $k(.,.)$ but no explicit computation of $\mathbf{z}_i$. (This is a nice property ! Recall that $\varphi$ takes values in a space that is potentially non-finite, typically a function space.) Appendix E1 presents the full algorithm to produce the oblivious kernel matrix $\hat{\mathcal{O}}_n$ for a given kernel $k$, aggregating all of these computations in one pass.
 
-Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is binary, there should not be any issue. If it is continuous, then it is necessary to partition the range into chunks of non-zero probability and one could run into issues if one of those chunks is associated with few data points (the estimation would be pretty bad). 
+:::{.callout-warning}
+Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is discrete and balanced, there should not be any issue. If it is continuous, or discrete with numerous / unbalanced categories, then it is necessary to partition the range into classes of non-zero probability and guarantee that each class is large large enough to contain enough observations in the sample. The authors dismiss the issue by focussing only on binary sensitive features.
+:::
 
-
-## Application to binary classification 
+## Application to binary classification with one binary sensitive feature
 
 In this section, we present an example of the application of method to the binary classification. We refer both to the text of the article and to the code in teh authors' implementation.  \footnote{https://github.com/azalk/Oblivious}. Some of the claims made in the paper, especially about the value of parameters, are contradicted by the implementation. In such case, we will refer to what we found in the implementation. 
 
@@ -215,115 +165,17 @@ At this point, the authors raise an important question: how should such _fair_ p
 
 > \[in our experiment\], we are able to calculate the true (unbiased) errors as well. However, this is not always the case in practice. In fact, we argue that the question of how to evaluate fair classification performance is an important open problem which has yet to be addressed.
 
-In their application, the authors show that although the misclassification error measured with the real labels is higher using oblivious SVM, it is lower when the error is measured using the fair labels; in both care the comparison is made with the linear SVM. 
+In their application, the authors show that although the misclassification error measured with the real (observed, biased) labels is higher using oblivious SVM (as compared to linear SVM), it is lower when the error is measured using the fair labels. 
 
-**Léo: je ne suis pas certain des notations(pour s, parce que dans l'article ils marquent S =s) dans l'équation suivante, ni même de son utilisé.**
-Finally, the authors measure the dependancy between the predictions of the algorithm and the sensitive feature $s$ using a measure  $\tilde \beta$ that writes:
-$$\tilde \beta(\hat y, s) \overset{\Delta}= \frac{1}{2} \sum_{s \in \{0,1\}} \sum_{y \in \{0,1\}} \mathbb{E} \lvert \mathbb{P}(\hat y = y, \tilde s = s \vert \mathcal{F}_n) - \mathbb{P}(\hat y = y\vert \mathcal{F}_n) \mathbb{P}(\tilde s = s)\rvert $$
-where $\mathcal{F}_n$ is the $\sigma$-algebra generated by the training set. Intuitively, $\tilde \beta$ should le be small if $\hat y$ and $s$ are close to be independent. The authors compute the empirical counterpart of $\tilde \beta$ and show that it is close to 0 for the oblivious SVM, whereas $\tilde \beta \geqslant 0.8$ for the linear SVM.
+Finally, the authors measure the dependency between the predictions of the algorithm $\hat y$ and the sensitive feature $\tilde s$ using a measure $\beta$ that writes:
+$$\beta(\hat y, \tilde s) \overset{\Delta}= \frac{1}{2} \sum_{s \in \{0,1\}} \sum_{y \in \{0,1\}} \mathbb{E} \lvert \mathbb{P}(\hat y = y, \tilde s = s \vert \mathcal{F}_n) - \mathbb{P}(\hat y = y\vert \mathcal{F}_n) \mathbb{P}(\tilde s = s)\rvert $$
+... where $\mathcal{F}_n$ is the $\sigma$-algebra generated by the training set. (Here, both $\hat y$ and $\tilde s$ are considered as random variables, not a specific sample observation.) Intuitively, $\beta$ should le be small if $\hat y$ and $\tilde s$ are close to independent. The authors compute the empirical counterpart of $\beta$ and show that $\hat \beta \simeq 0$ for the oblivious SVM, whereas $\hat \beta \geqslant 0.8$ for the linear SVM.
 
-In this synthetic example, the method proposed by the authors allows to reach something close to independence between the sensitive attributes and the prediction of the algorithms. The misclassification error of the algorithm is higher than a typical linear SVM if the labels used for the evaluation are the observed ones, but lower if the _fair_ labels are used. 
+In this synthetic example, the method proposed by the authors allows to reach something close to independence between the sensitive attributes and the prediction of the algorithms. The misclassification error of the algorithm is higher than a typical linear SVM if the labels used for the evaluation are the observed ones, but lower if the _fair_ labels are used.
 
-
-
-
-
-
-
-
---- 
-
-**Fais comme tu veux arthur**
-
-::: {.callout-note}
-
-Waste of computation with kernel os size 2n if we use just the upper left and bottom right corners?
-:::
-
-
-The application uses synthetic data representing the grades of students discriminated according to some sensitive feature. $\tilde s\sim B(0.5)$ is the (binary) sensitive feature[^1]. The grades are biased towards the high-prestige status associated with $\tilde s=1$, which the authors model as: $$\tilde x\overset{def}=\tilde x_0+\tilde b\mathbb{1}(\tilde s=1)-\tilde b\mathbb{1}(\tilde s=0)$$ ... where $\tilde x_0\sim\mathcal{N}_{[1,4]}(2.5,0.5)$ is the baseline grade and $\tilde b\sim B(0.9)$ is the 1-unit bias for group $s=1$ or against group $s=0$ [^2].
-
-\textbf{Sensitive feature in the code} In the code, half of the synthetic data has $s=1$ the other half $s=0$, deterministically:
-
-```python
-unique_sensitive_feature_values=[0,1]
-sensitive_features =
-[unique_sensitive_feature_values[0]] * n_samples +
-[unique_sensitive_feature_values[1]] * n_samples
-```
-    
-\textbf{X0 in the code} In the code:
-
-```python
-max_non_sensitive_feature_value = 4.0
-min_non_sensitive_feature_value = 1.0
-mu = 0.5 * (max_non_sensitive_feature_value+min_non_sensitive_feature_value)
-Lower = generate_truncnorm_samples(
-n_samples, min_non_sensitive_feature_value,
-max_non_sensitive_feature_value, mu, sigma
-)
-Upper = generate_truncnorm_samples(
-n_samples, min_non_sensitive_feature_value,
-max_non_sensitive_feature_value, mu, sigma
-)
-non_sensitive_features = 
-[Lower-stats.bernoulli(0.9).rvs(n_samples)*1]+
-[Upper+stats.bernoulli(0.9).rvs(n_samples)*1]
-```
-
-Eventually, the authors construct a decision mimicking some decision made based on the students' official results. This decision is based on a mix of the true student abilities (as given by $x_0$) and the biased ones (as given by $x$). Namely, they set : $$\tilde y = \mathbb{1}(\tilde u\geqslant \tilde x_0) \; \mathbb{1}(\tilde x+\tilde s\geqslant \theta)$$ ... with $\tilde u\sim\mathcal{U}[0,4]$ and $\theta$ a real parameter, arbitrarily set by the authors to be $\theta=\mathbb{E}\tilde x_0=2.5$ [^4].
-
-\textbf{In the code: contradiciton regarding U} The paper states that $\tilde u\sim\mathcal{U}[0,1]$ but this contradicts the earlier statement that $\tilde x_0$ be truncated on $[1,4]$. In the code, we see that $\mathbb{1}(\tilde u\geqslant x_0)\sim \mathcal{B}(x_0/4)$, which means that in reality $\tilde u\sim\mathcal{U}[0,4]$. Again, this ignores the fact that $\tilde x_0\overset{a.s.}>1$.
-    
-```python
-threshold = mu # mu is the mean of the truncated normal distribution from above
-Y_Bernoulli_params = non_sensitive_features0 / max_non_sensitive_feature_value
-Y = [stats.bernoulli(Y_Bernoulli_params[i]).rvs(1) for i in range(len(Y_Bernoulli_params))]
-Y = Y * ((non_sensitive_features + sensitive_features >= threshold)*1)
-```
-    
-Note that the exemple falls in the **Oblivious** case, that is that $Y|X$ is not independent from $S$. Indeed, the minority group is disavantdged twice in the process:
-
-- First, their grade $\tilde x$ is diminished.
-- Secondly, their grade is compared to a higher threshold: $\theta - \tilde s$. Indeed, for the advantaged group, $\tilde s = 1$.      
-
-Contrary to the mathematical background, the implementation is not detailed in the paper, so we reconstruct it from the code. In [the SVM example]( https://github.com/azalk/Oblivious/blob/main/SVM_Example.py ), the substantial part is:
-
-```python
-# X is training data (including sensitive data) of length 2n = 2×500 
-# S is X reduced to the sensitive data
-# y_train is training predictions of length n
-K = obl.build_K_lin(X,X)      # K has size 2n × 2n
-O = obl.build_O_discrete(K,S) # O has size  n ×  n
-clf = svm.SVC(kernel='precomputed')
-clf.fit(O, y_train)
-```
-
-The `K = obl.build_K_lin(X,X)` line is straightforward, as it just builds the kernel matrix consisting in all dot products between line $i$ and line $j$ of `X`. On the other hand, the essence of the oblivious method proposed by the authors lay hidden behind the `O = obl.build_O_discrete(K,S)` line. It boils down to the following loop over the first $n=500$ observations, where all the averages `mean_iI`, `mean_IJ`, `mean_I`, `mean_i` and `Ephi` are computed on the second (independent) half. (This explains why `K` has size $2n$ × $2n$ whereas `O` has size $n\times n$.)
-
-```python
-for i in range(n): # n=500 (half the dataset length)
-  for j in range(i,n):
-    
-    u = int(self.S_train[i]) # value of s for observation i
-    v = int(self.S_train[j]) # value of s for observation j
-    
-    O[i,j] = K[i,j] # kernel value
-      # 1. subtract individual-category average K[i, S=s]
-      #    for s matching observed values
-      - mean_iI[i,v] - mean_iI[j,u] 
-      # 2. add category-category average K[S=s1,S=s2]
-      #    for s1, s2 matching observed values
-      + mean_IJ[u,v]
-      # 3. add individual average K[i,.]
-      + mean_i[j] + mean_i[i]
-      # 4. subtract category average K[S=s,.]
-      #    with s matching observed values
-      - mean_I[u] - mean_I[v]
-      # 5. add general average K[.,.]
-      + Ephi
-    
-    # save computation with symmetry
-    O[j,i] = O[i,j]
-```
 ---
+
+## References
+
+::: {#refs}
+:::
