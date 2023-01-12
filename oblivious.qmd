@@ -92,7 +92,7 @@ However, this is an important departure from the initial problem. Specifically, 
 
 ### Alternative independence definition
 
-But now how to define the independence requirement for $\mathbf{z}\in\mathcal{H}$? Indeed, that's from an independence definition that we obtained $f$ in the first place ! The authors proceed step by step, starting with the premise that independence can be defined in term of independence: $$\begin{aligned}
+But now how to define the independence requirement for $\mathbf{z}\in\mathcal{H}$? Indeed, that's from an independence definition that we obtained $f$ in the first place ! The authors proceed step by step, starting with the premise that independence can be defined in terms of expectation: $$\begin{aligned}
 \tilde z\perp\!\!\!\perp \tilde s \iff \\
 \forall h_1 \in (\mathbb{R}^d)^{\mathbb{X}}, \; \forall h_2 \in (\mathbb{R}^d)^{\mathbb{S}} : \\
 \mathbb{E}[h_1(\tilde z)\cdot h_2(\tilde s)]=\mathbb{E}[h_1(\tilde z)]\cdot \mathbb{E}[h_2(\tilde s)]
@@ -137,7 +137,7 @@ $$\langle \varphi(x_i), \hat{\mathbb{E}}_n(\varphi(x) | \tilde s \in S_j )\rangl
 At this point, we see that each scalar product in the oblivious matrix can be estimated by empirical averages of different sorts that involve calls to the kernel $k(.,.)$ but no explicit computation of $\mathbf{z}_i$. (This is a nice property ! Recall that $\varphi$ takes values in a space that is potentially non-finite, typically a function space.) Appendix E1 presents the full algorithm to produce the oblivious kernel matrix $\hat{\mathcal{O}}_n$ for a given kernel $k$, aggregating all of these computations in one pass.
 
 :::{.callout-warning}
-Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is discrete and balanced, there should not be any issue. If it is continuous, or discrete with numerous / unbalanced categories, then it is necessary to partition the range into classes of non-zero probability and guarantee that each class is large large enough to contain enough observations in the sample. The authors dismiss the issue by focussing only on binary sensitive features.
+Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is discrete and balanced, there should not be any issue. If it is continuous, or discrete with numerous / unbalanced categories, then it is necessary to partition the range into classes of non-zero probability and guarantee that each class is large large enough to contain enough observations in the sample. The authors do not comment on this issue. 
 :::
 
 ## Application to binary classification with one binary sensitive feature
@@ -159,7 +159,7 @@ $$\tilde y \overset{\Delta}= \mathbb{1}(\tilde u\leqslant \tilde x_0) \; \mathbb
 
 The example may seem contrived, but it illustrates a case where $y$ is affected by $s$ both through $x$ and directly. Observe that $\tilde {y}|\tilde{x}\,\cancel{\perp\!\!\!\perp}\,\tilde{s}$. Indeed, the minority group is disadvantaged twice in the process: (i) their grade $\tilde x$ can be diminished (influence through $\tilde x$), (ii) as compared to the other group, their grade is compared to a higher threshold $\theta - \tilde s$, because $\tilde s = 1$ for the advantaged group (direct influence).
 
-In this setup, the authors fit to the data: (i) a linear SVM, so the kernel is simply the linear kernel $k(x_i, x_j) = x_i \cdot x_j$, (ii) an oblivious SVM, so the linear kernel is still used, but is applied to $\mathbf{z} = \varphi(x)$. Then, they compare those two methods in terms of binary classification error.
+In this setup, the authors fit to the data: (i) a linear SVM, so the kernel is simply the linear kernel $k(x_i, x_j) = x_i \cdot x_j$, (ii) an oblivious SVM, so the linear kernel is still used, but is applied to $\mathbf{z}$. Then, they compare those two methods in terms of binary classification error.
 
 At this point, the authors raise an important question: how should such _fair_ procedure be evaluated ? Comparing the predicted labels to the observed labels is not a good option because, by definition, the observed labels are _biased_. In this toy example, the authors have at their disposal the _fair_ labels (as defined by $y^*$), but this is not the case in most practical settings. The authors write:
 
