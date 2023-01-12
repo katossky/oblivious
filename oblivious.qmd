@@ -24,7 +24,7 @@ The article being very technical and very thorough, we here propose a simplified
 
 ## Background
 
-Let's suppose we have at our disposal data $(x_n,s_n,y_n)$ where the $x$'s are nonsensitive features but the $S$'s are sensitive features. We want to provide a way to train a kernel-based model $g:\mathbb{X}\to\mathbb{Y}$ on $(x_n,y_n)$ where $s\perp\!\!\!\perp \hat y\equiv g(x)$ but we do not want our method to be dependent on which specific model $f$ we use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(z_n,y_n)$ instead.
+Let's suppose we have at our disposal data $(x_n,s_n,y_n)$ where the $x$'s are nonsensitive features but the $s$'s are sensitive features. We want to provide a way to train a kernel-based model $g:\mathbb{X}\to\mathbb{Y}$ on $(x_n,y_n)$ where $s\perp\!\!\!\perp \hat y\equiv g(x)$ but we do not want our method to be dependent on which specific model $f$ we use. A wide-ranging solution is simply to replace $x$ by an other variable $z$, keep $x$ secret and perform the training on $(z_n,y_n)$ instead.
 
 The goal of the article is thus to devise a procedure that allows to generate this new random variable $z$, that ideally should :
 
