@@ -137,7 +137,7 @@ $$\langle \varphi(x_i), \hat{\mathbb{E}}_n(\varphi(x) | \tilde s \in S_j )\rangl
 At this point, we see that each scalar product in the oblivious matrix can be estimated by empirical averages of different sorts that involve calls to the kernel $k(.,.)$ but no explicit computation of $\mathbf{z}_i$. (This is a nice property ! Recall that $\varphi$ takes values in a space that is potentially non-finite, typically a function space.) Appendix E1 presents the full algorithm to produce the oblivious kernel matrix $\hat{\mathcal{O}}_n$ for a given kernel $k$, aggregating all of these computations in one pass.
 
 :::{.callout-warning}
-Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is discrete and balanced, there should not be any issue. If it is continuous, or discrete with numerous / unbalanced categories, then it is necessary to partition the range into classes of non-zero probability and guarantee that each class is large large enough to contain enough observations in the sample. The authors do not comment on this issue. 
+Note that depending on the nature of $s$, the computation can be more or less trivial. If the sensitive attribute $s$ is discrete and balanced, there should not be any issue. If it is continuous, or discrete with numerous / unbalanced categories, then it is necessary to partition the range into classes of non-zero probability and guarantee that each class is large enough to contain enough observations in the sample. The authors do not comment on this issue. 
 :::
 
 ## Application to binary classification with one binary sensitive feature
